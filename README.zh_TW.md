@@ -1,5 +1,6 @@
-> [!IMPORTANT]
-> 本 Fork 後續所做的程式碼修改僅用於個人 Demo 展示，不用於任何商業用途。原開源專案內容及相關聲明均予以保留。
+<h1 align="center">⚠️ 僅限個人 DEMO 展示 · 嚴禁商業用途 ⚠️</h1>
+
+<p align="center"><strong>本 Fork 後續所做的程式碼修改僅用於個人 Demo 展示，原開源專案內容及相關聲明均予以保留。</strong></p>
 
 <div align="center">
 

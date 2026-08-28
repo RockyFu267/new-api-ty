@@ -1,5 +1,6 @@
-> [!IMPORTANT]
-> Les modifications de code apportées ultérieurement à ce fork sont exclusivement destinées à des démonstrations personnelles et non à un usage commercial. L'intégralité du contenu et des mentions du projet open source d'origine est conservée.
+<h1 align="center">⚠️ DÉMO PERSONNELLE UNIQUEMENT — AUCUN USAGE COMMERCIAL ⚠️</h1>
+
+<p align="center"><strong>Les modifications ultérieures de ce fork sont exclusivement destinées à des démonstrations personnelles. L'intégralité du contenu et des mentions du projet open source d'origine est conservée.</strong></p>
 
 <div align="center">
 

@@ -1,5 +1,6 @@
-> [!IMPORTANT]
-> Subsequent code changes in this fork are intended solely for personal demo presentations and not for any commercial use. All original open-source project content and related notices are retained.
+<h1 align="center">⚠️ PERSONAL DEMO ONLY — NOT FOR COMMERCIAL USE ⚠️</h1>
+
+<p align="center"><strong>Subsequent code changes in this fork are intended solely for personal demo presentations. All original open-source project content and related notices are retained.</strong></p>
 
 <div align="center">
 
