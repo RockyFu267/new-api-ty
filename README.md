@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> Subsequent code changes in this fork are intended solely for personal demo presentations and not for any commercial use. All original open-source project content and related notices are retained.
+
 <div align="center">
 
 ![new-api](/web/public/logo.png)

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> 本 Fork 後續所做的程式碼修改僅用於個人 Demo 展示，不用於任何商業用途。原開源專案內容及相關聲明均予以保留。
+
 <div align="center">
 
 ![new-api](/web/public/logo.png)

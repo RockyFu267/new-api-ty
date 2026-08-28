@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> Les modifications de code apportées ultérieurement à ce fork sont exclusivement destinées à des démonstrations personnelles et non à un usage commercial. L'intégralité du contenu et des mentions du projet open source d'origine est conservée.
+
 <div align="center">
 
 ![new-api](/web/public/logo.png)
