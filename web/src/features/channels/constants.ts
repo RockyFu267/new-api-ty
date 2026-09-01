@@ -80,7 +80,7 @@ export const CHANNEL_TYPES = {
   57: 'ChatGPT Subscription (Codex)',
   58: 'Advanced Custom',
   59: 'Sub2API',
-  60: 'New API',
+  60: 'TIANYAN',
 } as const
 
 const CHANNEL_TYPE_DISPLAY_ORDER: number[] = [

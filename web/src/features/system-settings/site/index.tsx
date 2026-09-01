@@ -26,8 +26,8 @@ import {
 
 const defaultSiteSettings: SiteSettings = {
   Notice: '',
-  SystemName: 'New API',
-  Logo: '',
+  SystemName: 'TIANYAN',
+  Logo: '/tianyan-logo.png',
   Footer: '',
   About: '',
   HomePageContent: '',
