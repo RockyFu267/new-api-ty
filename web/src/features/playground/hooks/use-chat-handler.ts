@@ -38,6 +38,7 @@ import type { Message, PlaygroundConfig, ParameterEnabled } from '../types'
 import { useStreamRequest } from './use-stream-request'
 
 interface UseChatHandlerOptions {
+  channelId?: number
   config: PlaygroundConfig
   parameterEnabled: ParameterEnabled
   onMessageUpdate: (updater: (prev: Message[]) => Message[]) => void
@@ -67,6 +68,7 @@ function mergePendingStreamChunk(
  * Hook for handling chat message sending and receiving
  */
 export function useChatHandler({
+  channelId,
   config,
   parameterEnabled,
   onMessageUpdate,
@@ -254,6 +256,9 @@ export function useChatHandler({
         config,
         parameterEnabled
       )
+      if (channelId) {
+        payload.channel_id = channelId
+      }
       void sendStreamRequest(
         payload,
         (type, chunk) => handleStreamUpdate(generation, type, chunk),
@@ -263,6 +268,7 @@ export function useChatHandler({
     },
     [
       config,
+      channelId,
       parameterEnabled,
       sendStreamRequest,
       discardPendingStreamUpdates,
@@ -280,6 +286,9 @@ export function useChatHandler({
         config,
         parameterEnabled
       )
+      if (channelId) {
+        payload.channel_id = channelId
+      }
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
 
@@ -337,6 +346,7 @@ export function useChatHandler({
     },
     [
       config,
+      channelId,
       parameterEnabled,
       stopStream,
       discardPendingStreamUpdates,

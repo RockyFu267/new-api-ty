@@ -66,6 +66,7 @@ export interface ContentPart {
 }
 
 export interface ChatCompletionRequest {
+  channel_id?: number
   model: string
   group?: string
   messages: ChatCompletionMessage[]
