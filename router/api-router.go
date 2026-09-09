@@ -232,6 +232,12 @@ func SetApiRouter(router *gin.Engine) {
 			knowledgeBaseRoute.PUT("/documents/:id/content", controller.EditKnowledgeDocumentAdmin)
 			knowledgeBaseRoute.DELETE("/documents/:id", controller.DeleteKnowledgeDocumentAdmin)
 		}
+		skillShowcaseRoute := apiRouter.Group("/skill-showcase")
+		skillShowcaseRoute.Use(middleware.UserAuth())
+		{
+			skillShowcaseRoute.GET("/", controller.GetSkillShowcase)
+			skillShowcaseRoute.POST("/apply", controller.ApplySkillShowcase)
+		}
 
 		// Custom OAuth provider management (root only)
 		customOAuthRoute := apiRouter.Group("/custom-oauth-provider")

@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Bot, Download, FileText, Folder, Loader2, Server } from 'lucide-react'
+import { ArrowLeft, Bot, Download, ExternalLink, FileText, Folder, Loader2, Server, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -15,6 +15,8 @@ import {
 import { PlaygroundChat } from '@/features/playground/components/chat/playground-chat'
 import { PlaygroundInput } from '@/features/playground/components/input/playground-input'
 import { api } from '@/lib/api'
+import { Switch } from '@/components/ui/switch'
+import { extractShowcaseDirective, inferShowcaseDirective } from '@/features/skill-showcase/directive'
 import {
   buildKnowledgeTree,
   collectKnowledgeDocumentIds,
@@ -61,6 +63,8 @@ function ChannelChatSession(props: {
     DEFAULT_PARAMETER_ENABLED
   )
   const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>([])
+  const [showcaseSkillEnabled, setShowcaseSkillEnabled] = useState(false)
+  const appliedSkillMessages = useRef(new Set<string>())
   const knowledgeQuery = useQuery({
     queryKey: ['knowledge-documents-user'],
     queryFn: getKnowledgeDocuments,
@@ -87,10 +91,35 @@ function ChannelChatSession(props: {
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
     channelId: props.target.channel_id,
     knowledgeDocumentIds: selectedKnowledgeIds,
+    skillId: showcaseSkillEnabled ? 'showcase-designer' : undefined,
     config,
     parameterEnabled,
     onMessageUpdate: updateMessages,
   })
+
+  useEffect(() => {
+    if (!showcaseSkillEnabled) return
+    const message = messages.at(-1)
+    if (!message || message.from !== 'assistant' || (message.status !== 'complete' && !message.isContentComplete)) return
+    const version = message.versions.at(-1)
+    const executionKey = `${message.key}:${version?.id ?? ''}`
+    if (!version || appliedSkillMessages.current.has(executionKey)) return
+    const userMessage = [...messages].reverse().find((item) => item.from === 'user')
+    const userContent = userMessage?.versions.at(-1)?.content ?? ''
+    const directive = extractShowcaseDirective(version.content) ?? inferShowcaseDirective(userContent, version.content)
+    if (!directive) {
+      appliedSkillMessages.current.add(executionKey)
+      toast.warning('模型没有返回可执行的 Skill 指令，请明确指定展示模板或修改内容')
+      return
+    }
+    appliedSkillMessages.current.add(executionKey)
+    void api.post('/api/skill-showcase/apply', directive).then(() => {
+      toast.success('Skill 已执行，展示页已实时更新')
+    }).catch(() => {
+      appliedSkillMessages.current.delete(executionKey)
+      toast.error('Skill 指令执行失败')
+    })
+  }, [messages, showcaseSkillEnabled])
 
   const conversation = usePlaygroundConversation({
     messages,
@@ -249,6 +278,11 @@ function ChannelChatSession(props: {
           </div>
         </div>
       ) : null}
+
+      <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
+        <div className='flex items-center gap-3'><div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'><Sparkles className='size-4' /></div><div><p className='text-sm font-medium'>企业展示屏设计师 Skill</p><p className='text-muted-foreground text-xs'>开启后可试试：“切换成管理驾驶舱风格，并把标题改成全球运维中心”</p></div></div>
+        <div className='flex items-center gap-3'><Button type='button' variant='outline' size='sm' onClick={() => window.open('/skill-showcase', '_blank')}><ExternalLink className='mr-1 size-3.5' />打开展示页</Button><Switch checked={showcaseSkillEnabled} onCheckedChange={setShowcaseSkillEnabled} aria-label='启用企业展示屏设计师 Skill' /></div>
+      </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat

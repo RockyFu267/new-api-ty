@@ -41,3 +41,15 @@ http://localhost:3000
 3. 修改 knowledge-base 中的 Markdown 文件：不需要重新编译，在管理页面重新点击“扫描目录”。
 4. 如果前端依赖没有变化，可以跳过 bun install。
 5. 如果移动项目或知识库目录，请同步修改项目根目录 .env 中的 KNOWLEDGE_BASE_PATH。
+
+cd D:\code\github\new-api-ty\new-api-ty
+
+git add -A
+
+git status
+
+git commit -m "feat: add controlled skill showcase demo"
+
+git pull --rebase origin main
+
+git push origin main

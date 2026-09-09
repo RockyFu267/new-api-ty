@@ -1,0 +1,1 @@
+{"version":1788943145916,"template":"operations-green","title":"绿色运维中心","subtitle":"高效·稳定·可持续","announcement":"今日自动修复 18 项潜在故障","metrics":[{"label":"健康节点","value":"256","trend":"100%"},{"label":"能源效率","value":"PUE 1.18","trend":"优秀"},{"label":"故障恢复","value":"42s","trend":"平均 MTTR"}],"highlights":["容量趋势智能预测","故障自愈编排","能耗与成本协同优化"],"updated_at":"2026-09-09T16:39:05+08:00"}

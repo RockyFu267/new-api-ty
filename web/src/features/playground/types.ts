@@ -68,6 +68,7 @@ export interface ContentPart {
 export interface ChatCompletionRequest {
   channel_id?: number
   knowledge_document_ids?: number[]
+  skill_id?: string
   model: string
   group?: string
   messages: ChatCompletionMessage[]
