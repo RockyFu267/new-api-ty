@@ -33,6 +33,9 @@ var auditContentTemplates = map[string]string{
 	"chat_prompt.delete":    "Deleted chat prompt for channel ${channel_id}, model ${model}",
 	"knowledge_base.scan":   "Scanned knowledge base directory (${count} Markdown files)",
 	"knowledge_base.access": "Updated knowledge document ${id} (enabled: ${enabled}, download: ${download})",
+	"knowledge_base.create": "Created knowledge document ${path}",
+	"knowledge_base.edit":   "Edited knowledge document ${path}",
+	"knowledge_base.delete": "Deleted knowledge document ${path}",
 
 	"channel.create":             "Created channel ${name} (type ${type}, count ${count})",
 	"channel.update":             "Updated channel ${name} (ID: ${id})",

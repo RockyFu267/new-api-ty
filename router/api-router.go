@@ -225,8 +225,12 @@ func SetApiRouter(router *gin.Engine) {
 		knowledgeBaseRoute.Use(middleware.AdminAuth())
 		{
 			knowledgeBaseRoute.GET("/documents", controller.ListKnowledgeDocumentsAdmin)
+			knowledgeBaseRoute.POST("/documents", controller.CreateKnowledgeDocumentAdmin)
+			knowledgeBaseRoute.GET("/documents/:id", controller.GetKnowledgeDocumentAdmin)
 			knowledgeBaseRoute.POST("/scan", controller.ScanKnowledgeDocumentsAdmin)
 			knowledgeBaseRoute.PUT("/documents/:id", controller.UpdateKnowledgeDocumentAdmin)
+			knowledgeBaseRoute.PUT("/documents/:id/content", controller.EditKnowledgeDocumentAdmin)
+			knowledgeBaseRoute.DELETE("/documents/:id", controller.DeleteKnowledgeDocumentAdmin)
 		}
 
 		// Custom OAuth provider management (root only)

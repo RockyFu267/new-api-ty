@@ -64,6 +64,42 @@ func UpdateKnowledgeDocumentAccess(id int64, enabled, allowDownload bool) error 
 	return DB.Model(&KnowledgeDocument{}).Where("id = ? AND available = ?", id, true).Updates(map[string]any{"enabled": enabled, "allow_download": allowDownload}).Error
 }
 
+func GetKnowledgeDocumentAdmin(id int64) (*KnowledgeDocument, error) {
+	var document KnowledgeDocument
+	err := DB.First(&document, id).Error
+	return &document, err
+}
+
+func CreateKnowledgeDocument(document *KnowledgeDocument) error {
+	var existing KnowledgeDocument
+	err := DB.Where("relative_path = ?", document.RelativePath).First(&existing).Error
+	if err == nil {
+		document.Id = existing.Id
+		document.Enabled = existing.Enabled
+		document.AllowDownload = existing.AllowDownload
+		return DB.Model(&existing).Updates(map[string]any{
+			"name": document.Name, "content": document.Content,
+			"size": document.Size, "available": true,
+		}).Error
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+	return DB.Create(document).Error
+}
+
+func UpdateKnowledgeDocumentContent(id int64, content string, size int64) error {
+	return DB.Model(&KnowledgeDocument{}).Where("id = ?", id).Updates(map[string]any{
+		"content":   content,
+		"size":      size,
+		"available": true,
+	}).Error
+}
+
+func DeleteKnowledgeDocument(id int64) error {
+	return DB.Delete(&KnowledgeDocument{}, id).Error
+}
+
 func GetKnowledgeDocument(id int64) (*KnowledgeDocument, error) {
 	var document KnowledgeDocument
 	err := DB.Where("id = ? AND enabled = ? AND available = ?", id, true, true).First(&document).Error

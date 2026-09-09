@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Bot, Download, FileText, Folder, Loader2, Server } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +15,11 @@ import {
 import { PlaygroundChat } from '@/features/playground/components/chat/playground-chat'
 import { PlaygroundInput } from '@/features/playground/components/input/playground-input'
 import { api } from '@/lib/api'
+import {
+  buildKnowledgeTree,
+  collectKnowledgeDocumentIds,
+  type KnowledgeTreeNode,
+} from '@/features/knowledge-base/tree'
 import {
   useChatHandler,
   usePlaygroundConversation,
@@ -129,16 +134,10 @@ function ChannelChatSession(props: {
     }
   }
 
-  const knowledgeByDirectory = useMemo(() => {
-    const grouped = new Map<string, KnowledgeDocument[]>()
-    for (const document of knowledgeQuery.data ?? []) {
-      const directory = document.relative_path.includes('/')
-        ? document.relative_path.slice(0, document.relative_path.lastIndexOf('/'))
-        : '根目录'
-      grouped.set(directory, [...(grouped.get(directory) ?? []), document])
-    }
-    return [...grouped.entries()]
-  }, [knowledgeQuery.data])
+  const knowledgeTree = useMemo(
+    () => buildKnowledgeTree(knowledgeQuery.data ?? []),
+    [knowledgeQuery.data]
+  )
 
   const toggleDocuments = (ids: number[], checked: boolean) => {
     setSelectedKnowledgeIds((current) => {
@@ -149,6 +148,77 @@ function ChannelChatSession(props: {
       }
       return [...next]
     })
+  }
+
+  const renderKnowledgeNode = (
+    node: KnowledgeTreeNode<KnowledgeDocument>,
+    depth = 0
+  ): ReactNode => {
+    if (node.kind === 'directory') {
+      const ids = collectKnowledgeDocumentIds(node)
+      const selectedCount = ids.filter((id) =>
+        selectedKnowledgeIds.includes(id)
+      ).length
+      const checked = selectedCount === ids.length && ids.length > 0
+      const indeterminate = selectedCount > 0 && selectedCount < ids.length
+      return (
+        <div key={`directory:${node.path || 'root'}`}>
+          <label
+            className='bg-muted/30 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 font-medium'
+            style={{ marginLeft: `${depth * 20}px` }}
+          >
+            <Checkbox
+              checked={checked}
+              indeterminate={indeterminate}
+              onCheckedChange={(value) => toggleDocuments(ids, value === true)}
+            />
+            <Folder className='text-primary size-4 shrink-0' />
+            <span>{node.name}</span>
+            <span className='text-muted-foreground text-xs font-normal'>
+              {selectedCount}/{ids.length}
+            </span>
+          </label>
+          <div className='mt-1 space-y-1'>
+            {node.children.map((child) =>
+              renderKnowledgeNode(child, depth + 1)
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    const knowledgeDocument = node.document
+    if (!knowledgeDocument) return null
+    return (
+      <div
+        key={`file:${node.path}`}
+        className='flex items-center gap-2 rounded-md px-2 py-1 text-sm'
+        style={{ marginLeft: `${depth * 20}px` }}
+      >
+        <Checkbox
+          checked={selectedKnowledgeIds.includes(knowledgeDocument.id)}
+          onCheckedChange={(value) =>
+            toggleDocuments([knowledgeDocument.id], value === true)
+          }
+        />
+        <FileText className='text-muted-foreground size-3.5 shrink-0' />
+        <span className='min-w-0 flex-1 truncate' title={node.path}>
+          {node.name}
+        </span>
+        {knowledgeDocument.allow_download ? (
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='size-7'
+            aria-label={`下载 ${knowledgeDocument.name}`}
+            onClick={() => void downloadKnowledge(knowledgeDocument)}
+          >
+            <Download className='size-3.5' />
+          </Button>
+        ) : null}
+      </div>
+    )
   }
 
   return (
@@ -174,21 +244,8 @@ function ChannelChatSession(props: {
       {(knowledgeQuery.data?.length ?? 0) > 0 ? (
         <div className='bg-muted/30 max-h-48 overflow-auto border-b px-4 py-3'>
           <div className='mb-2 flex items-center justify-between'><p className='text-sm font-medium'>选择本次对话使用的知识库</p><span className='text-muted-foreground text-xs'>已选 {selectedKnowledgeIds.length} 个文件</span></div>
-          <div className='grid gap-2 md:grid-cols-2'>
-            {knowledgeByDirectory.map(([directory, documents]) => {
-              const ids = documents.map((document) => document.id)
-              const directoryChecked = ids.every((id) => selectedKnowledgeIds.includes(id))
-              return <div key={directory} className='rounded-lg border bg-background p-3'>
-                <label className='flex cursor-pointer items-center gap-2 font-medium'><Checkbox checked={directoryChecked} onCheckedChange={(value) => toggleDocuments(ids, value === true)} /><Folder className='size-4' />{directory}</label>
-                <div className='mt-2 space-y-2 pl-6'>{documents.map((document) => (
-                  <div key={document.id} className='flex items-center gap-2 text-sm'>
-                    <Checkbox checked={selectedKnowledgeIds.includes(document.id)} onCheckedChange={(value) => toggleDocuments([document.id], value === true)} />
-                    <FileText className='size-3.5' /><span className='min-w-0 flex-1 truncate'>{document.name}</span>
-                    {document.allow_download ? <Button type='button' variant='ghost' size='icon' className='size-7' aria-label={`下载 ${document.name}`} onClick={() => void downloadKnowledge(document)}><Download className='size-3.5' /></Button> : null}
-                  </div>
-                ))}</div>
-              </div>
-            })}
+          <div className='rounded-lg border bg-background p-2'>
+            {renderKnowledgeNode(knowledgeTree)}
           </div>
         </div>
       ) : null}

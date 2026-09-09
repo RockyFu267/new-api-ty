@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -48,4 +51,53 @@ func TestInjectPlaygroundKnowledgeDoesNothingWithoutSelection(t *testing.T) {
 	}
 	require.NoError(t, common.UnmarshalBodyReusable(context, &original))
 	require.Len(t, original.Messages, 1)
+}
+
+func TestKnowledgeDocumentCreateEditDelete(t *testing.T) {
+	db := setupModelListControllerTestDB(t)
+	require.NoError(t, db.AutoMigrate(&model.Log{}))
+	root := t.TempDir()
+	t.Setenv("KNOWLEDGE_BASE_PATH", root)
+
+	createRecorder := httptest.NewRecorder()
+	createContext, _ := gin.CreateTestContext(createRecorder)
+	createContext.Request = httptest.NewRequest(http.MethodPost, "/api/knowledge-bases/documents", strings.NewReader(`{"relative_path":"k8s/demo.md","content":"# 初始内容"}`))
+	createContext.Set("id", 1)
+	CreateKnowledgeDocumentAdmin(createContext)
+	require.Equal(t, http.StatusOK, createRecorder.Code)
+
+	var document model.KnowledgeDocument
+	require.NoError(t, db.Where("relative_path = ?", "k8s/demo.md").First(&document).Error)
+	content, err := os.ReadFile(filepath.Join(root, "k8s", "demo.md"))
+	require.NoError(t, err)
+	require.Equal(t, "# 初始内容", string(content))
+
+	editRecorder := httptest.NewRecorder()
+	editContext, _ := gin.CreateTestContext(editRecorder)
+	editContext.Params = gin.Params{{Key: "id", Value: strconv.FormatInt(document.Id, 10)}}
+	editContext.Request = httptest.NewRequest(http.MethodPut, "/api/knowledge-bases/documents/id/content", strings.NewReader(`{"content":"# 更新内容"}`))
+	editContext.Set("id", 1)
+	EditKnowledgeDocumentAdmin(editContext)
+	require.Equal(t, http.StatusOK, editRecorder.Code)
+	content, err = os.ReadFile(filepath.Join(root, "k8s", "demo.md"))
+	require.NoError(t, err)
+	require.Equal(t, "# 更新内容", string(content))
+
+	deleteRecorder := httptest.NewRecorder()
+	deleteContext, _ := gin.CreateTestContext(deleteRecorder)
+	deleteContext.Params = gin.Params{{Key: "id", Value: strconv.FormatInt(document.Id, 10)}}
+	deleteContext.Request = httptest.NewRequest(http.MethodDelete, "/api/knowledge-bases/documents/id", nil)
+	deleteContext.Set("id", 1)
+	DeleteKnowledgeDocumentAdmin(deleteContext)
+	require.Equal(t, http.StatusOK, deleteRecorder.Code)
+	_, err = os.Stat(filepath.Join(root, "k8s", "demo.md"))
+	require.True(t, os.IsNotExist(err))
+}
+
+func TestResolveKnowledgeMarkdownPathRejectsTraversal(t *testing.T) {
+	t.Setenv("KNOWLEDGE_BASE_PATH", t.TempDir())
+	_, _, err := resolveKnowledgeMarkdownPath("../outside.md", false)
+	require.Error(t, err)
+	_, _, err = resolveKnowledgeMarkdownPath("secret.txt", false)
+	require.Error(t, err)
 }

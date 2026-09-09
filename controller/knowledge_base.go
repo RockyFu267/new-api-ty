@@ -113,6 +113,158 @@ func UpdateKnowledgeDocumentAdmin(c *gin.Context) {
 	common.ApiSuccess(c, nil)
 }
 
+func resolveKnowledgeMarkdownPath(relativePath string, createParents bool) (string, string, error) {
+	root, err := knowledgeBaseRoot()
+	if err != nil {
+		return "", "", err
+	}
+	relativePath = filepath.ToSlash(strings.TrimSpace(relativePath))
+	if !filepath.IsLocal(filepath.FromSlash(relativePath)) || !strings.EqualFold(filepath.Ext(relativePath), ".md") {
+		return "", "", fmt.Errorf("知识文件必须是 knowledge-base 目录内的 .md 相对路径")
+	}
+	fullPath := filepath.Join(root, filepath.FromSlash(relativePath))
+	parent := filepath.Dir(fullPath)
+	if createParents {
+		if err = os.MkdirAll(parent, 0755); err != nil {
+			return "", "", err
+		}
+	}
+	resolvedRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", "", err
+	}
+	resolvedParent, err := filepath.EvalSymlinks(parent)
+	if err != nil {
+		return "", "", err
+	}
+	parentRelative, err := filepath.Rel(resolvedRoot, resolvedParent)
+	if err != nil || !filepath.IsLocal(parentRelative) && parentRelative != "." {
+		return "", "", fmt.Errorf("知识文件路径超出 knowledge-base 目录")
+	}
+	if info, statErr := os.Lstat(fullPath); statErr == nil && info.Mode()&os.ModeSymlink != 0 {
+		return "", "", fmt.Errorf("知识文件不能是符号链接")
+	}
+	return fullPath, relativePath, nil
+}
+
+func GetKnowledgeDocumentAdmin(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效参数"})
+		return
+	}
+	document, err := model.GetKnowledgeDocumentAdmin(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
+		"id": document.Id, "relative_path": document.RelativePath, "content": document.Content,
+	}})
+}
+
+func CreateKnowledgeDocumentAdmin(c *gin.Context) {
+	var request struct {
+		RelativePath string `json:"relative_path"`
+		Content      string `json:"content"`
+	}
+	if common.DecodeJson(c.Request.Body, &request) != nil || len([]byte(request.Content)) > maxKnowledgeMarkdownSize {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效参数或文件超过 1 MiB"})
+		return
+	}
+	fullPath, relativePath, err := resolveKnowledgeMarkdownPath(request.RelativePath, true)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	file, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	if err != nil {
+		c.JSON(http.StatusConflict, gin.H{"success": false, "message": "文件已存在或无法创建"})
+		return
+	}
+	if _, err = file.WriteString(request.Content); err != nil {
+		_ = file.Close()
+		_ = os.Remove(fullPath)
+		common.ApiError(c, err)
+		return
+	}
+	if err = file.Close(); err != nil {
+		_ = os.Remove(fullPath)
+		common.ApiError(c, err)
+		return
+	}
+	document := &model.KnowledgeDocument{
+		RelativePath: relativePath, Name: filepath.Base(fullPath), Content: request.Content,
+		Available: true, Size: int64(len([]byte(request.Content))),
+	}
+	if err = model.CreateKnowledgeDocument(document); err != nil {
+		_ = os.Remove(fullPath)
+		common.ApiError(c, err)
+		return
+	}
+	recordManageAudit(c, "knowledge_base.create", map[string]interface{}{"path": relativePath})
+	common.ApiSuccess(c, document)
+}
+
+func EditKnowledgeDocumentAdmin(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	var request struct {
+		Content string `json:"content"`
+	}
+	if err != nil || common.DecodeJson(c.Request.Body, &request) != nil || len([]byte(request.Content)) > maxKnowledgeMarkdownSize {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效参数或文件超过 1 MiB"})
+		return
+	}
+	document, err := model.GetKnowledgeDocumentAdmin(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	fullPath, _, err := resolveKnowledgeMarkdownPath(document.RelativePath, false)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if err = os.WriteFile(fullPath, []byte(request.Content), 0644); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err = model.UpdateKnowledgeDocumentContent(id, request.Content, int64(len([]byte(request.Content)))); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	recordManageAudit(c, "knowledge_base.edit", map[string]interface{}{"path": document.RelativePath})
+	common.ApiSuccess(c, nil)
+}
+
+func DeleteKnowledgeDocumentAdmin(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效参数"})
+		return
+	}
+	document, err := model.GetKnowledgeDocumentAdmin(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	fullPath, _, err := resolveKnowledgeMarkdownPath(document.RelativePath, false)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	if err = os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
+		common.ApiError(c, err)
+		return
+	}
+	if err = model.DeleteKnowledgeDocument(id); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	recordManageAudit(c, "knowledge_base.delete", map[string]interface{}{"path": document.RelativePath})
+	common.ApiSuccess(c, nil)
+}
+
 func ListUserKnowledgeDocuments(c *gin.Context) {
 	documents, err := model.ListKnowledgeDocuments(false)
 	if err != nil {
