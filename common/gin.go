@@ -105,6 +105,26 @@ func CleanupBodyStorage(c *gin.Context) {
 	}
 }
 
+// ReplaceRequestBody replaces the replayable request body after a middleware
+// has already cached it. It is used for trusted server-side request enrichment.
+func ReplaceRequestBody(c *gin.Context, data []byte) error {
+	if storage, exists := c.Get(KeyBodyStorage); exists && storage != nil {
+		if bs, ok := storage.(BodyStorage); ok {
+			_ = bs.Close()
+		}
+	}
+	storage, err := CreateBodyStorage(data)
+	if err != nil {
+		return err
+	}
+	c.Set(KeyBodyStorage, storage)
+	c.Set(KeyRequestBody, nil)
+	c.Request.Body = io.NopCloser(storage)
+	c.Request.ContentLength = int64(len(data))
+	c.Request.GetBody = storage.NewReader
+	return nil
+}
+
 func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	storage, err := GetBodyStorage(c)
 	if err != nil {

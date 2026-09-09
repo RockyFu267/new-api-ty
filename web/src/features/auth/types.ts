@@ -90,6 +90,7 @@ export interface ApiResponse<T = unknown> {
 // ============================================================================
 
 export interface SystemStatus {
+	ldap_ad_enabled?: boolean
   success?: boolean
   message?: string
   data?: {

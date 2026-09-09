@@ -21,7 +21,14 @@ import { describe, expect, test } from 'vitest'
 import type { RefreshOutcome } from '@/lib/api'
 import type { AuthBundle } from '@/stores/auth-store'
 
-import { executeLogout } from './api'
+import { executeLogout, getLoginEndpoint } from './api'
+
+describe('login route selection', () => {
+  test('keeps local and domain authentication on separate endpoints', () => {
+    expect(getLoginEndpoint('local')).toBe('/api/user/login')
+    expect(getLoginEndpoint('ldap_ad')).toBe('/api/user/ldap-ad/login')
+  })
+})
 
 const bundle: AuthBundle = {
   access_token: 'access-token',

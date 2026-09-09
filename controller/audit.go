@@ -29,6 +29,10 @@ var auditContentTemplates = map[string]string{
 	"user.passkey_delete":   "Deleted a passkey",
 	"user.reset_passkey":    "Reset the user passkey",
 	"option.update":         "Updated system setting ${key}",
+	"chat_prompt.update":    "Updated chat prompt for channel ${channel_id}, model ${model}",
+	"chat_prompt.delete":    "Deleted chat prompt for channel ${channel_id}, model ${model}",
+	"knowledge_base.scan":   "Scanned knowledge base directory (${count} Markdown files)",
+	"knowledge_base.access": "Updated knowledge document ${id} (enabled: ${enabled}, download: ${download})",
 
 	"channel.create":             "Created channel ${name} (type ${type}, count ${count})",
 	"channel.update":             "Updated channel ${name} (ID: ${id})",

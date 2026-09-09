@@ -122,6 +122,13 @@ export function useUsersColumns(): ColumnDef<User>[] {
       meta: { mobileTitle: true },
     },
     {
+	  accessorKey: 'auth_source',
+	  header: '来源',
+	  cell: ({ row }) => <StatusBadge label={(row.original.auth_source || 'local').toUpperCase()} variant={row.original.auth_source?.includes('ad') ? 'success' : 'neutral'} copyable={false} />,
+	  enableSorting: false,
+	  size: 110,
+	},
+	{
       accessorKey: 'status',
       header: t('Status'),
       cell: ({ row }) => {

@@ -23,10 +23,16 @@ import { WorkerSettingsSection } from '../integrations/worker-settings-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
+import { ChannelMaintenanceSection } from './channel-maintenance-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
 const OPERATIONS_SECTIONS = [
+  {
+    id: 'channel-maintenance',
+    titleKey: '渠道维护',
+    build: (_settings: OperationsSettings) => <ChannelMaintenanceSection />,
+  },
   {
     id: 'behavior',
     titleKey: 'System Behavior',

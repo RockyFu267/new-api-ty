@@ -22,6 +22,7 @@ import { BasicAuthSection } from './basic-auth-section'
 import { BotProtectionSection } from './bot-protection-section'
 import { CustomOAuthSection } from './custom-oauth/custom-oauth-section'
 import { OAuthSection } from './oauth-section'
+import { LDAPADSection } from './ldap-ad-section'
 import { PasskeySection } from './passkey-section'
 
 const AUTH_SECTIONS = [
@@ -80,6 +81,22 @@ const AUTH_SECTIONS = [
     ),
   },
   {
+	 id: 'ldap-ad',
+	 titleKey: '域控接入',
+	 build: (settings: AuthSettings) => (
+	   <LDAPADSection defaultValues={{
+		 'ldap_ad.enabled': settings['ldap_ad.enabled'],
+		 'ldap_ad.url': settings['ldap_ad.url'],
+		 'ldap_ad.base_dn': settings['ldap_ad.base_dn'],
+		 'ldap_ad.bind_dn': settings['ldap_ad.bind_dn'],
+		 'ldap_ad.bind_secret': '',
+		 'ldap_ad.login_attr': settings['ldap_ad.login_attr'],
+		 'ldap_ad.user_filter': settings['ldap_ad.user_filter'],
+		 'ldap_ad.allowed_user_base_dn': settings['ldap_ad.allowed_user_base_dn'],
+	   }} />
+	 ),
+	},
+	{
     id: 'passkey',
     titleKey: 'Passkey Authentication',
     build: (settings: AuthSettings) => (

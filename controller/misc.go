@@ -91,6 +91,7 @@ func GetStatus(c *gin.Context) {
 		"self_use_mode_enabled":         operation_setting.SelfUseModeEnabled,
 		"register_enabled":              common.RegisterEnabled,
 		"password_login_enabled":        common.PasswordLoginEnabled,
+		"ldap_ad_enabled":               system_setting.GetLDAPADSettings().Enabled,
 		"password_register_enabled":     common.PasswordRegisterEnabled,
 		"default_use_auto_group":        setting.DefaultUseAutoGroup,
 

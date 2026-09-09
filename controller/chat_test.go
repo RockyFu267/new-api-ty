@@ -57,7 +57,30 @@ func TestGetUserChannelModelsReturnsEnabledAuthorizedChannelModels(t *testing.T)
 	require.NoError(t, common.Unmarshal(recorder.Body.Bytes(), &payload))
 	require.True(t, payload.Success)
 	require.Equal(t, []model.UserChannelModel{
-		{ChannelId: 302, ChannelName: "AWS Bedrock", ChannelType: 24, Group: "default", Model: "claude-bedrock"},
-		{ChannelId: 301, ChannelName: "Local Qwen", ChannelType: 33, Group: "default", Model: "qwen-local"},
+		{ChannelId: 302, ChannelName: "AWS Bedrock", ChannelType: 24, Group: "default", Model: "claude-bedrock", PromptTitle: model.DefaultChatPromptTitle, PromptDescription: model.DefaultChatPromptDescription},
+		{ChannelId: 301, ChannelName: "Local Qwen", ChannelType: 33, Group: "default", Model: "qwen-local", PromptTitle: model.DefaultChatPromptTitle, PromptDescription: model.DefaultChatPromptDescription},
 	}, payload.Data)
+}
+
+func TestGetUserChannelModelsReturnsPromptForExactChannelModel(t *testing.T) {
+	db := setupModelListControllerTestDB(t)
+	require.NoError(t, db.Create(&[]model.Channel{
+		{Id: 401, Name: "Free Qwen", Type: 33, Status: common.ChannelStatusEnabled, Key: "secret", Group: "default", Models: "shared-model"},
+		{Id: 402, Name: "Paid Qwen", Type: 24, Status: common.ChannelStatusEnabled, Key: "secret", Group: "default", Models: "shared-model"},
+	}).Error)
+	require.NoError(t, db.Create(&[]model.Ability{
+		{Group: "default", Model: "shared-model", ChannelId: 401, Enabled: true},
+		{Group: "default", Model: "shared-model", ChannelId: 402, Enabled: true},
+	}).Error)
+	require.NoError(t, db.Create(&model.ChatPrompt{
+		ChannelId: 402, Model: "shared-model", Title: "付费模型", Description: "使用会产生费用。",
+	}).Error)
+
+	items, err := model.GetUserChannelModels([]string{"default"})
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	require.Equal(t, model.DefaultChatPromptTitle, items[0].PromptTitle)
+	require.Equal(t, model.DefaultChatPromptDescription, items[0].PromptDescription)
+	require.Equal(t, "付费模型", items[1].PromptTitle)
+	require.Equal(t, "使用会产生费用。", items[1].PromptDescription)
 }

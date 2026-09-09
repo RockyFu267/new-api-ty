@@ -39,6 +39,7 @@ import { useStreamRequest } from './use-stream-request'
 
 interface UseChatHandlerOptions {
   channelId?: number
+  knowledgeDocumentIds?: number[]
   config: PlaygroundConfig
   parameterEnabled: ParameterEnabled
   onMessageUpdate: (updater: (prev: Message[]) => Message[]) => void
@@ -69,6 +70,7 @@ function mergePendingStreamChunk(
  */
 export function useChatHandler({
   channelId,
+  knowledgeDocumentIds,
   config,
   parameterEnabled,
   onMessageUpdate,
@@ -259,6 +261,9 @@ export function useChatHandler({
       if (channelId) {
         payload.channel_id = channelId
       }
+      if (knowledgeDocumentIds?.length) {
+        payload.knowledge_document_ids = knowledgeDocumentIds
+      }
       void sendStreamRequest(
         payload,
         (type, chunk) => handleStreamUpdate(generation, type, chunk),
@@ -269,6 +274,7 @@ export function useChatHandler({
     [
       config,
       channelId,
+      knowledgeDocumentIds,
       parameterEnabled,
       sendStreamRequest,
       discardPendingStreamUpdates,
@@ -288,6 +294,9 @@ export function useChatHandler({
       )
       if (channelId) {
         payload.channel_id = channelId
+      }
+      if (knowledgeDocumentIds?.length) {
+        payload.knowledge_document_ids = knowledgeDocumentIds
       }
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
@@ -347,6 +356,7 @@ export function useChatHandler({
     [
       config,
       channelId,
+      knowledgeDocumentIds,
       parameterEnabled,
       stopStream,
       discardPendingStreamUpdates,

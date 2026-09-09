@@ -40,7 +40,8 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { login, wechatLoginByCode } from '@/features/auth/api'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { loginWithMethod, wechatLoginByCode } from '@/features/auth/api'
 import { LegalConsent } from '@/features/auth/components/legal-consent'
 import { OAuthProviders } from '@/features/auth/components/oauth-providers'
 import { loginFormSchema } from '@/features/auth/constants'
@@ -66,6 +67,7 @@ export function UserAuthForm({
 }: AuthFormProps) {
   const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
+  const [loginMethod, setLoginMethod] = useState<'local' | 'ldap_ad'>('local')
   const [wechatCode, setWeChatCode] = useState('')
   const [agreedToLegal, setAgreedToLegal] = useState(false)
   const [passkeySupported, setPasskeySupported] = useState(false)
@@ -124,6 +126,10 @@ export function UserAuthForm({
   }, [requiresLegalConsent])
 
   useEffect(() => {
+    if (!passwordLoginEnabled) setLoginMethod('ldap_ad')
+  }, [passwordLoginEnabled])
+
+  useEffect(() => {
     detectPasskeySupport()
       .then(setPasskeySupported)
       .catch(() => setPasskeySupported(false))
@@ -167,7 +173,7 @@ export function UserAuthForm({
 
     setIsLoading(true)
     try {
-      const res = await login({
+      const res = await loginWithMethod(loginMethod, {
         username: data.username,
         password: data.password,
         turnstile: submittedTurnstileToken,
@@ -357,15 +363,39 @@ export function UserAuthForm({
       >
         {hasAlternativeLogin && alternativeLoginMethods}
 
-        {passwordLoginEnabled && (
+        {
           <>
+            <Tabs
+              value={loginMethod}
+              onValueChange={(value) =>
+                setLoginMethod(value as 'local' | 'ldap_ad')
+              }
+            >
+              <TabsList className='h-11 w-full'>
+                <TabsTrigger
+                  value='local'
+                  className='h-full'
+                  disabled={!passwordLoginEnabled}
+                >
+                  本地账号
+                </TabsTrigger>
+                <TabsTrigger value='ldap_ad' className='h-full'>
+                  域账号
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className='rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-sm text-blue-700 dark:text-blue-300'>
+              {loginMethod === 'ldap_ad'
+                ? '当前使用域账号认证，账号密码将提交至 LDAP 域控验证。'
+                : '当前使用本地账号认证。'}
+            </div>
             {/* Username Field */}
             <FormField
               control={form.control}
               name='username'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Username or Email')}</FormLabel>
+                  <FormLabel>{loginMethod === 'ldap_ad' ? '域账号' : t('Username or Email')}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder={t('Enter your username or email')}
@@ -391,12 +421,12 @@ export function UserAuthForm({
                     />
                   </FormControl>
                   <FormMessage />
-                  <Link
+                  {loginMethod === 'local' && <Link
                     to='/forgot-password'
                     className='text-muted-foreground absolute end-0 -top-0.5 z-10 text-sm font-medium hover:opacity-75'
                   >
                     {t('Forgot password?')}
-                  </Link>
+				  </Link>}
                 </FormItem>
               )}
             />
@@ -408,7 +438,7 @@ export function UserAuthForm({
               disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
             >
               {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
-              {t('Sign in')}
+              {loginMethod === 'ldap_ad' ? '域账号登录' : t('Sign in')}
             </Button>
 
             {/* Turnstile */}
@@ -423,7 +453,7 @@ export function UserAuthForm({
               </div>
             )}
           </>
-        )}
+        }
 
         <LegalConsent
           status={status}

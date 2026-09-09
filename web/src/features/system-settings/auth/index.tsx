@@ -25,6 +25,14 @@ import {
 } from './section-registry.tsx'
 
 const defaultAuthSettings: AuthSettings = {
+	'ldap_ad.enabled': false,
+	'ldap_ad.url': '',
+	'ldap_ad.base_dn': '',
+	'ldap_ad.bind_dn': '',
+	'ldap_ad.bind_secret': '',
+	'ldap_ad.login_attr': 'sAMAccountName',
+	'ldap_ad.user_filter': '(&(objectClass=user)(objectCategory=person)(sAMAccountName={username}))',
+	'ldap_ad.allowed_user_base_dn': '',
   PasswordLoginEnabled: true,
   PasswordRegisterEnabled: true,
   EmailVerificationEnabled: false,

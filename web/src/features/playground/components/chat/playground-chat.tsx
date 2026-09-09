@@ -60,6 +60,8 @@ interface PlaygroundChatProps {
   onCancelEdit?: (open: boolean) => void
   onSaveEditAndSubmit?: (newContent: string) => void
   messageLayoutMode?: PlaygroundMessageLayoutMode
+  emptyStateTitle?: string
+  emptyStateDescription?: string
 }
 
 export function PlaygroundChat({
@@ -76,6 +78,8 @@ export function PlaygroundChat({
   onCancelEdit,
   onSaveEditAndSubmit,
   messageLayoutMode = 'alternating',
+  emptyStateTitle,
+  emptyStateDescription,
 }: PlaygroundChatProps) {
   const { t } = useTranslation()
   const [editText, setEditText] = useState('')
@@ -195,7 +199,12 @@ export function PlaygroundChat({
 
   if (visibleMessages.length === 0 && onSelectPrompt) {
     chatContent = [
-      <PlaygroundEmptyState key='empty' onSelectPrompt={onSelectPrompt} />,
+      <PlaygroundEmptyState
+        key='empty'
+        onSelectPrompt={onSelectPrompt}
+        title={emptyStateTitle}
+        description={emptyStateDescription}
+      />,
     ]
   }
 

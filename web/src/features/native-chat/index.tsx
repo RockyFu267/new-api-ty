@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Bot, Loader2, Server } from 'lucide-react'
+import { ArrowLeft, Bot, Download, FileText, Folder, Loader2, Server } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Card,
   CardDescription,
@@ -12,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { PlaygroundChat } from '@/features/playground/components/chat/playground-chat'
 import { PlaygroundInput } from '@/features/playground/components/input/playground-input'
+import { api } from '@/lib/api'
 import {
   useChatHandler,
   usePlaygroundConversation,
@@ -31,7 +34,12 @@ import type {
 } from '@/features/playground/types'
 
 import { getChannelModels } from './api'
-import type { ChannelModel } from './types'
+import type { ChannelModel, KnowledgeDocument } from './types'
+
+async function getKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
+  const response = await api.get('/api/user/chat/knowledge-documents')
+  return response.data?.data ?? []
+}
 
 function ChannelChatSession(props: {
   target: ChannelModel
@@ -47,6 +55,11 @@ function ChannelChatSession(props: {
   const [parameterEnabled, setParameterEnabled] = useState<ParameterEnabled>(
     DEFAULT_PARAMETER_ENABLED
   )
+  const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>([])
+  const knowledgeQuery = useQuery({
+    queryKey: ['knowledge-documents-user'],
+    queryFn: getKnowledgeDocuments,
+  })
 
   const updateMessages = useCallback((updater: MessageStateUpdater) => {
     setMessages((previous) => applyMessageStateUpdate(previous, updater))
@@ -68,6 +81,7 @@ function ChannelChatSession(props: {
 
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
     channelId: props.target.channel_id,
+    knowledgeDocumentIds: selectedKnowledgeIds,
     config,
     parameterEnabled,
     onMessageUpdate: updateMessages,
@@ -99,6 +113,44 @@ function ChannelChatSession(props: {
     [props.target.group]
   )
 
+  const downloadKnowledge = async (knowledgeDocument: KnowledgeDocument) => {
+    try {
+      const response = await api.get(`/api/user/chat/knowledge-documents/${knowledgeDocument.id}/download`, {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data as Blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = knowledgeDocument.name
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('知识库原文下载失败')
+    }
+  }
+
+  const knowledgeByDirectory = useMemo(() => {
+    const grouped = new Map<string, KnowledgeDocument[]>()
+    for (const document of knowledgeQuery.data ?? []) {
+      const directory = document.relative_path.includes('/')
+        ? document.relative_path.slice(0, document.relative_path.lastIndexOf('/'))
+        : '根目录'
+      grouped.set(directory, [...(grouped.get(directory) ?? []), document])
+    }
+    return [...grouped.entries()]
+  }, [knowledgeQuery.data])
+
+  const toggleDocuments = (ids: number[], checked: boolean) => {
+    setSelectedKnowledgeIds((current) => {
+      const next = new Set(current)
+      for (const id of ids) {
+        if (checked) next.add(id)
+        else next.delete(id)
+      }
+      return [...next]
+    })
+  }
+
   return (
     <div className='relative flex size-full min-h-0 flex-col overflow-hidden'>
       <div className='border-border flex items-center gap-3 border-b px-4 py-3'>
@@ -119,6 +171,28 @@ function ChannelChatSession(props: {
         </div>
       </div>
 
+      {(knowledgeQuery.data?.length ?? 0) > 0 ? (
+        <div className='bg-muted/30 max-h-48 overflow-auto border-b px-4 py-3'>
+          <div className='mb-2 flex items-center justify-between'><p className='text-sm font-medium'>选择本次对话使用的知识库</p><span className='text-muted-foreground text-xs'>已选 {selectedKnowledgeIds.length} 个文件</span></div>
+          <div className='grid gap-2 md:grid-cols-2'>
+            {knowledgeByDirectory.map(([directory, documents]) => {
+              const ids = documents.map((document) => document.id)
+              const directoryChecked = ids.every((id) => selectedKnowledgeIds.includes(id))
+              return <div key={directory} className='rounded-lg border bg-background p-3'>
+                <label className='flex cursor-pointer items-center gap-2 font-medium'><Checkbox checked={directoryChecked} onCheckedChange={(value) => toggleDocuments(ids, value === true)} /><Folder className='size-4' />{directory}</label>
+                <div className='mt-2 space-y-2 pl-6'>{documents.map((document) => (
+                  <div key={document.id} className='flex items-center gap-2 text-sm'>
+                    <Checkbox checked={selectedKnowledgeIds.includes(document.id)} onCheckedChange={(value) => toggleDocuments([document.id], value === true)} />
+                    <FileText className='size-3.5' /><span className='min-w-0 flex-1 truncate'>{document.name}</span>
+                    {document.allow_download ? <Button type='button' variant='ghost' size='icon' className='size-7' aria-label={`下载 ${document.name}`} onClick={() => void downloadKnowledge(document)}><Download className='size-3.5' /></Button> : null}
+                  </div>
+                ))}</div>
+              </div>
+            })}
+          </div>
+        </div>
+      ) : null}
+
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat
           messages={messages}
@@ -132,6 +206,8 @@ function ChannelChatSession(props: {
           onCancelEdit={conversation.handleEditOpenChange}
           onSaveEdit={(content) => conversation.applyEdit(content, false)}
           onSaveEditAndSubmit={(content) => conversation.applyEdit(content, true)}
+          emptyStateTitle={props.target.prompt_title}
+          emptyStateDescription={props.target.prompt_description}
         />
       </div>
 

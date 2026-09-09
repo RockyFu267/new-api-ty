@@ -71,6 +71,7 @@ func SetApiRouter(router *gin.Engine) {
 			userRoute.POST("/auth/logout", middleware.SessionCookieOriginGuard(), middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AuthLogout)
 			userRoute.POST("/register", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, middleware.TurnstileCheck(), controller.Register)
 			userRoute.POST("/login", middleware.CriticalRateLimit(), middleware.DisableCache(), anonymousRequestBodyLimit, middleware.TurnstileCheck(), controller.Login)
+			userRoute.POST("/ldap-ad/login", middleware.CriticalRateLimit(), middleware.DisableCache(), anonymousRequestBodyLimit, controller.LDAPADLogin)
 			userRoute.POST("/login/2fa", middleware.CriticalRateLimit(), middleware.DisableCache(), anonymousRequestBodyLimit, controller.Verify2FALogin)
 			userRoute.POST("/passkey/login/begin", middleware.CriticalRateLimit(), middleware.DisableCache(), anonymousRequestBodyLimit, controller.PasskeyLoginBegin)
 			userRoute.POST("/passkey/login/finish", middleware.CriticalRateLimit(), middleware.DisableCache(), anonymousRequestBodyLimit, controller.PasskeyLoginFinish)
@@ -89,6 +90,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.GET("/models", controller.GetUserModels)
 				selfRoute.GET("/chat/channel-models", controller.GetUserChannelModels)
+				selfRoute.GET("/chat/knowledge-documents", controller.ListUserKnowledgeDocuments)
+				selfRoute.GET("/chat/knowledge-documents/:id/download", controller.DownloadKnowledgeDocument)
 				selfRoute.PUT("/self", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
 				selfRoute.GET("/token", middleware.CriticalRateLimit(), middleware.UserCriticalRateLimit("access-token"), middleware.DisableCache(), controller.GenerateAccessToken)
@@ -203,6 +206,27 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.POST("/waffo-pancake/save", controller.SaveWaffoPancake)
 			optionRoute.POST("/waffo-pancake/subscription-product", controller.CreateWaffoPancakeSubscriptionProduct)
 			optionRoute.GET("/waffo-pancake/subscription-product-options", controller.ListWaffoPancakeSubscriptionProductOptions)
+		}
+		ldapADRoute := apiRouter.Group("/ldap-ad")
+		ldapADRoute.Use(middleware.RootAuth())
+		{
+			ldapADRoute.POST("/test", controller.TestLDAPADConnection)
+			ldapADRoute.GET("/users", controller.PreviewLDAPADUsers)
+			ldapADRoute.POST("/sync", controller.SyncLDAPADUsers)
+		}
+		chatPromptRoute := apiRouter.Group("/chat-prompts")
+		chatPromptRoute.Use(middleware.AdminAuth())
+		{
+			chatPromptRoute.GET("/", controller.ListChatPrompts)
+			chatPromptRoute.PUT("/", controller.SaveChatPrompt)
+			chatPromptRoute.DELETE("/", controller.RemoveChatPrompt)
+		}
+		knowledgeBaseRoute := apiRouter.Group("/knowledge-bases")
+		knowledgeBaseRoute.Use(middleware.AdminAuth())
+		{
+			knowledgeBaseRoute.GET("/documents", controller.ListKnowledgeDocumentsAdmin)
+			knowledgeBaseRoute.POST("/scan", controller.ScanKnowledgeDocumentsAdmin)
+			knowledgeBaseRoute.PUT("/documents/:id", controller.UpdateKnowledgeDocumentAdmin)
 		}
 
 		// Custom OAuth provider management (root only)

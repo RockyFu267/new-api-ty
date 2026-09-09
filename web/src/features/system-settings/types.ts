@@ -121,6 +121,14 @@ export type SiteSettings = {
 }
 
 export type AuthSettings = {
+	'ldap_ad.enabled': boolean
+	'ldap_ad.url': string
+	'ldap_ad.base_dn': string
+	'ldap_ad.bind_dn': string
+	'ldap_ad.bind_secret': string
+	'ldap_ad.login_attr': string
+	'ldap_ad.user_filter': string
+	'ldap_ad.allowed_user_base_dn': string
   PasswordLoginEnabled: boolean
   PasswordRegisterEnabled: boolean
   EmailVerificationEnabled: boolean

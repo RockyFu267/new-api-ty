@@ -40,11 +40,17 @@ import type {
 // Login & Logout
 // ----------------------------------------------------------------------------
 
-// User login with username and password
-export async function login(payload: LoginPayload) {
+export type LoginMethod = 'local' | 'ldap_ad'
+
+export function getLoginEndpoint(method: LoginMethod): string {
+  return method === 'ldap_ad' ? '/api/user/ldap-ad/login' : '/api/user/login'
+}
+
+export async function loginWithMethod(method: LoginMethod, payload: LoginPayload) {
   const turnstile = payload.turnstile ?? ''
+  const endpoint = getLoginEndpoint(method)
   const res = await api.post<LoginResponse>(
-    `/api/user/login?turnstile=${turnstile}`,
+    method === 'local' ? `${endpoint}?turnstile=${turnstile}` : endpoint,
     {
       username: payload.username,
       password: payload.password,
@@ -52,6 +58,15 @@ export async function login(payload: LoginPayload) {
     { skipAuthRefresh: true }
   )
   return res.data
+}
+
+// User login with username and password
+export async function login(payload: LoginPayload) {
+  return loginWithMethod('local', payload)
+}
+
+export async function ldapADLogin(payload: LoginPayload) {
+  return loginWithMethod('ldap_ad', payload)
 }
 
 // Two-factor authentication login

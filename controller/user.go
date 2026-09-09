@@ -117,6 +117,8 @@ func loginMethodFromContext(c *gin.Context) string {
 	switch c.FullPath() {
 	case "/api/user/login":
 		return "password"
+	case "/api/user/ldap-ad/login":
+		return "ldap_ad"
 	case "/api/user/login/2fa":
 		return "2fa"
 	case "/api/user/passkey/login/finish":
@@ -331,6 +333,10 @@ func GetAllUsers(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err = model.EnrichUsersWithAuthSource(users); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(users)
@@ -358,6 +364,10 @@ func SearchUsers(c *gin.Context) {
 	sortOptions := model.NewUserSortOptions(c.Query("sort_by"), c.Query("sort_order"))
 	users, total, err := model.SearchUsers(keyword, group, role, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), sortOptions)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err = model.EnrichUsersWithAuthSource(users); err != nil {
 		common.ApiError(c, err)
 		return
 	}
