@@ -48,6 +48,13 @@ async function getKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
   return response.data?.data ?? []
 }
 
+type AvailableSkill = { id: string; name: string; description: string }
+
+async function getAvailableSkill(): Promise<AvailableSkill | null> {
+  const response = await api.get('/api/user/chat/skills/showcase')
+  return response.data?.data ?? null
+}
+
 function ChannelChatSession(props: {
   target: ChannelModel
   onBack: () => void
@@ -69,6 +76,14 @@ function ChannelChatSession(props: {
     queryKey: ['knowledge-documents-user'],
     queryFn: getKnowledgeDocuments,
   })
+  const skillQuery = useQuery({
+    queryKey: ['showcase-skill-user'],
+    queryFn: getAvailableSkill,
+  })
+
+  useEffect(() => {
+    if (!skillQuery.isPending && !skillQuery.data) setShowcaseSkillEnabled(false)
+  }, [skillQuery.data, skillQuery.isPending])
 
   const updateMessages = useCallback((updater: MessageStateUpdater) => {
     setMessages((previous) => applyMessageStateUpdate(previous, updater))
@@ -279,10 +294,10 @@ function ChannelChatSession(props: {
         </div>
       ) : null}
 
-      <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
-        <div className='flex items-center gap-3'><div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'><Sparkles className='size-4' /></div><div><p className='text-sm font-medium'>企业展示屏设计师 Skill</p><p className='text-muted-foreground text-xs'>开启后可试试：“切换成管理驾驶舱风格，并把标题改成全球运维中心”</p></div></div>
+      {skillQuery.data ? <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
+        <div className='flex items-center gap-3'><div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'><Sparkles className='size-4' /></div><div><p className='text-sm font-medium'>{skillQuery.data.name} Skill</p><p className='text-muted-foreground text-xs'>{skillQuery.data.description}</p></div></div>
         <div className='flex items-center gap-3'><Button type='button' variant='outline' size='sm' onClick={() => window.open('/skill-showcase', '_blank')}><ExternalLink className='mr-1 size-3.5' />打开展示页</Button><Switch checked={showcaseSkillEnabled} onCheckedChange={setShowcaseSkillEnabled} aria-label='启用企业展示屏设计师 Skill' /></div>
-      </div>
+      </div> : null}
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat

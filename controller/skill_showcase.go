@@ -47,6 +47,14 @@ type showcaseDirective struct {
 	Changes  showcaseChanges `json:"changes"`
 }
 
+type showcaseSkillDefinition struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	SystemPrompt string `json:"system_prompt"`
+	Enabled      bool   `json:"enabled"`
+}
+
 var showcaseTemplates = map[string]showcaseConfig{
 	"cyber-blue":       {Template: "cyber-blue", Title: "TIANYAN 智能运维中心", Subtitle: "让企业基础设施状态一目了然", Announcement: "所有核心服务运行正常", Metrics: []showcaseMetric{{"在线集群", "12", "+2 本月"}, {"运行工作负载", "1,286", "99.98% 可用"}, {"AI 自动化任务", "368", "+24%"}}, Highlights: []string{"多云资源统一治理", "智能告警关联分析", "自然语言驱动运维"}},
 	"executive-dark":   {Template: "executive-dark", Title: "企业数字化运营驾驶舱", Subtitle: "从数据到决策，只需一次对话", Announcement: "本季度运营效率提升 23%", Metrics: []showcaseMetric{{"受管资产", "8,642", "+12%"}, {"自动化覆盖率", "87%", "+9%"}, {"节省工时", "2,480h", "本季度"}}, Highlights: []string{"管理层全景视图", "关键指标实时洞察", "业务风险提前预警"}},
@@ -55,7 +63,92 @@ var showcaseTemplates = map[string]showcaseConfig{
 }
 
 func showcaseConfigPath() string {
-	return filepath.Join("demo", "skill-showcase.json")
+	return showcaseDemoFilePath("skill-showcase.json")
+}
+
+func showcaseSkillDefinitionPath() string {
+	return showcaseDemoFilePath("showcase-skill.json")
+}
+
+func showcaseDemoFilePath(name string) string {
+	for _, root := range []string{"demo", filepath.Join("..", "demo")} {
+		path := filepath.Join(root, name)
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+	return filepath.Join("demo", name)
+}
+
+func loadShowcaseSkillDefinition() (showcaseSkillDefinition, error) {
+	var definition showcaseSkillDefinition
+	data, err := os.ReadFile(showcaseSkillDefinitionPath())
+	if err != nil {
+		return definition, err
+	}
+	err = common.Unmarshal(data, &definition)
+	return definition, err
+}
+
+func saveShowcaseSkillDefinition(definition showcaseSkillDefinition) error {
+	data, err := common.Marshal(definition)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(showcaseSkillDefinitionPath(), data, 0o644)
+}
+
+func GetShowcaseSkillAdmin(c *gin.Context) {
+	showcaseConfigMu.Lock()
+	defer showcaseConfigMu.Unlock()
+	definition, err := loadShowcaseSkillDefinition()
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, definition)
+}
+
+func UpdateShowcaseSkillAdmin(c *gin.Context) {
+	var input showcaseSkillDefinition
+	if err := c.ShouldBindJSON(&input); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	input.ID = showcaseSkillID
+	input.Name = strings.TrimSpace(input.Name)
+	input.Description = strings.TrimSpace(input.Description)
+	input.SystemPrompt = strings.TrimSpace(input.SystemPrompt)
+	if input.Name == "" || input.SystemPrompt == "" {
+		common.ApiError(c, errors.New("Skill 名称和系统提示词不能为空"))
+		return
+	}
+	if validateShowcaseText(input.Name, 60) != nil || validateShowcaseText(input.Description, 300) != nil || validateShowcaseText(input.SystemPrompt, 4000) != nil {
+		common.ApiError(c, errors.New("Skill 配置超过长度限制"))
+		return
+	}
+	showcaseConfigMu.Lock()
+	defer showcaseConfigMu.Unlock()
+	if err := saveShowcaseSkillDefinition(input); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, input)
+}
+
+func GetAvailableShowcaseSkill(c *gin.Context) {
+	showcaseConfigMu.Lock()
+	defer showcaseConfigMu.Unlock()
+	definition, err := loadShowcaseSkillDefinition()
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if !definition.Enabled {
+		common.ApiSuccess(c, nil)
+		return
+	}
+	common.ApiSuccess(c, gin.H{"id": definition.ID, "name": definition.Name, "description": definition.Description})
 }
 
 func validateShowcaseText(value string, max int) error {
@@ -181,12 +274,21 @@ func injectPlaygroundSkill(c *gin.Context) error {
 	if request.SkillID != showcaseSkillID {
 		return errors.New("未知的 Skill")
 	}
+	showcaseConfigMu.Lock()
+	definition, err := loadShowcaseSkillDefinition()
+	showcaseConfigMu.Unlock()
+	if err != nil {
+		return err
+	}
+	if !definition.Enabled {
+		return errors.New("该 Skill 已被管理员停用")
+	}
 	var raw map[string]interface{}
 	if err := common.UnmarshalBodyReusable(c, &raw); err != nil {
 		return err
 	}
 	messages, _ := raw["messages"].([]interface{})
-	prompt := `你已启用“企业展示屏设计师”Skill。请根据用户意图选择最合适的模板并设计展示内容。可选模板：cyber-blue（科技蓝）、executive-dark（管理驾驶舱）、operations-green（绿色运维）、aurora-purple（AI 创新）。严禁只口头声称已经修改；只有输出下列机器指令后平台才会真正执行。正常回复用户后，必须在回复末尾输出一个如下格式的代码块：` + "\n\n```tianyan-skill\n" + `{"action":"update_showcase","template":"cyber-blue","changes":{"title":"标题","subtitle":"副标题","announcement":"提示","metrics":[{"label":"指标","value":"数值","trend":"趋势"}],"highlights":["亮点"]}}` + "\n```\n" + `action 固定为 update_showcase；template 必须为可选模板之一；changes 可只包含用户要求修改的字段。不要输出其他动作、路径、脚本或命令。`
+	prompt := definition.SystemPrompt + `\n\n平台执行协议（不可省略）：可选模板为 cyber-blue（科技蓝）、executive-dark（管理驾驶舱）、operations-green（绿色运维）、aurora-purple（AI 创新）。严禁只口头声称已经修改；只有输出下列机器指令后平台才会真正执行。正常回复用户后，必须在回复末尾输出一个如下格式的代码块：` + "\n\n```tianyan-skill\n" + `{"action":"update_showcase","template":"cyber-blue","changes":{"title":"标题","subtitle":"副标题","announcement":"提示","metrics":[{"label":"指标","value":"数值","trend":"趋势"}],"highlights":["亮点"]}}` + "\n```\n" + `action 固定为 update_showcase；template 必须为可选模板之一；changes 可只包含用户要求修改的字段。不要输出其他动作、路径、脚本或命令。`
 	raw["messages"] = append([]interface{}{map[string]interface{}{"role": "system", "content": prompt}}, messages...)
 	delete(raw, "skill_id")
 	data, err := common.Marshal(raw)

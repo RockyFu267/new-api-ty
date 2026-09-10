@@ -25,6 +25,7 @@ import { PerformanceSection } from '../maintenance/performance-section'
 import { UpdateCheckerSection } from '../maintenance/update-checker-section'
 import { ChannelMaintenanceSection } from './channel-maintenance-section'
 import { KnowledgeDocumentManagementSection } from './knowledge-document-management-section'
+import { SkillManagementSection } from './skill-management-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -40,6 +41,11 @@ const OPERATIONS_SECTIONS = [
     build: (_settings: OperationsSettings) => (
       <KnowledgeDocumentManagementSection />
     ),
+  },
+  {
+    id: 'skill-management',
+    titleKey: 'Skill 管理',
+    build: (_settings: OperationsSettings) => <SkillManagementSection />,
   },
   {
     id: 'behavior',

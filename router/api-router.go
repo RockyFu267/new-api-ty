@@ -91,6 +91,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/models", controller.GetUserModels)
 				selfRoute.GET("/chat/channel-models", controller.GetUserChannelModels)
 				selfRoute.GET("/chat/knowledge-documents", controller.ListUserKnowledgeDocuments)
+				selfRoute.GET("/chat/skills/showcase", controller.GetAvailableShowcaseSkill)
 				selfRoute.GET("/chat/knowledge-documents/:id/download", controller.DownloadKnowledgeDocument)
 				selfRoute.PUT("/self", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
@@ -237,6 +238,12 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			skillShowcaseRoute.GET("/", controller.GetSkillShowcase)
 			skillShowcaseRoute.POST("/apply", controller.ApplySkillShowcase)
+		}
+		skillAdminRoute := apiRouter.Group("/skills/showcase")
+		skillAdminRoute.Use(middleware.AdminAuth())
+		{
+			skillAdminRoute.GET("/", controller.GetShowcaseSkillAdmin)
+			skillAdminRoute.PUT("/", controller.UpdateShowcaseSkillAdmin)
 		}
 
 		// Custom OAuth provider management (root only)
