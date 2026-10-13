@@ -31,6 +31,7 @@ import {
   User,
   Users,
   Wallet,
+  BookUser,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -101,6 +102,11 @@ export function useSidebarData(): SidebarData {
         id: 'personal',
         title: t('Personal'),
         items: [
+          {
+            title: '我的知识库',
+            url: '/private-knowledge-base',
+            icon: BookUser,
+          },
           {
             title: t('Wallet'),
             url: '/wallet',

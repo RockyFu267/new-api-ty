@@ -291,13 +291,14 @@ func DownloadKnowledgeDocument(c *gin.Context) {
 
 func injectPlaygroundKnowledge(c *gin.Context) error {
 	var request struct {
-		KnowledgeDocumentIds []int64       `json:"knowledge_document_ids"`
-		Messages             []dto.Message `json:"messages"`
+		KnowledgeDocumentIds        []int64       `json:"knowledge_document_ids"`
+		PrivateKnowledgeDocumentIds []int64       `json:"private_knowledge_document_ids"`
+		Messages                    []dto.Message `json:"messages"`
 	}
 	if err := common.UnmarshalBodyReusable(c, &request); err != nil {
 		return err
 	}
-	if len(request.KnowledgeDocumentIds) == 0 {
+	if len(request.KnowledgeDocumentIds) == 0 && len(request.PrivateKnowledgeDocumentIds) == 0 {
 		return nil
 	}
 	query := ""
@@ -311,7 +312,17 @@ func injectPlaygroundKnowledge(c *gin.Context) error {
 	if err != nil {
 		return err
 	}
+	privateDocuments, privateContext, err := model.RetrievePrivateKnowledgeDocuments(request.PrivateKnowledgeDocumentIds, c.GetInt("id"), query)
+	if err != nil {
+		return err
+	}
+	if privateContext != "" {
+		context = strings.TrimSpace(context + "\n\n" + privateContext)
+	}
 	prompt := model.BuildKnowledgeSystemPrompt(documents, context)
+	if len(privateDocuments) > 0 && len(documents) == 0 {
+		prompt = "你正在使用当前用户的 TIANYAN 私有知识库。请优先依据检索结果回答；资料未说明时明确表示未知，不要编造。\n\n<knowledge>\n" + context + "\n</knowledge>"
+	}
 	if prompt == "" {
 		return nil
 	}
@@ -322,6 +333,7 @@ func injectPlaygroundKnowledge(c *gin.Context) error {
 	messages, _ := raw["messages"].([]interface{})
 	raw["messages"] = append([]interface{}{map[string]interface{}{"role": "system", "content": prompt}}, messages...)
 	delete(raw, "knowledge_document_ids")
+	delete(raw, "private_knowledge_document_ids")
 	data, err := common.Marshal(raw)
 	if err != nil {
 		return err

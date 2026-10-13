@@ -23,6 +23,7 @@ cd D:\code\github\new-api-ty\new-api-ty
 知识库目录已经配置在项目根目录的 .env 文件中：
 
 KNOWLEDGE_BASE_PATH=../knowledge-base
+PRIVATE_KNOWLEDGE_BASE_PATH=../private-knowledge-base
 
 因此可以直接启动服务：
 

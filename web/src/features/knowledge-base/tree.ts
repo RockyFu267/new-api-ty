@@ -12,7 +12,8 @@ export type KnowledgeTreeNode<T extends KnowledgePathDocument> = {
 }
 
 export function buildKnowledgeTree<T extends KnowledgePathDocument>(
-  documents: T[]
+  documents: T[],
+  directoryPaths: string[] = []
 ): KnowledgeTreeNode<T> {
   const root: KnowledgeTreeNode<T> = {
     kind: 'directory',
@@ -52,6 +53,22 @@ export function buildKnowledgeTree<T extends KnowledgePathDocument>(
           path,
           children: [],
         }
+        parent.children.push(directory)
+      }
+      parent = directory
+    })
+  }
+
+  for (const directoryPath of directoryPaths) {
+    const segments = directoryPath.replaceAll('\\', '/').split('/').filter(Boolean)
+    let parent = root
+    segments.forEach((segment, index) => {
+      const path = segments.slice(0, index + 1).join('/')
+      let directory = parent.children.find(
+        (node) => node.kind === 'directory' && node.name === segment
+      )
+      if (!directory) {
+        directory = { kind: 'directory', name: segment, path, children: [] }
         parent.children.push(directory)
       }
       parent = directory

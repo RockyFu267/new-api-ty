@@ -40,6 +40,7 @@ import { useStreamRequest } from './use-stream-request'
 interface UseChatHandlerOptions {
   channelId?: number
   knowledgeDocumentIds?: number[]
+  privateKnowledgeDocumentIds?: number[]
   skillId?: string
   config: PlaygroundConfig
   parameterEnabled: ParameterEnabled
@@ -72,6 +73,7 @@ function mergePendingStreamChunk(
 export function useChatHandler({
   channelId,
   knowledgeDocumentIds,
+  privateKnowledgeDocumentIds,
   skillId,
   config,
   parameterEnabled,
@@ -266,6 +268,7 @@ export function useChatHandler({
       if (knowledgeDocumentIds?.length) {
         payload.knowledge_document_ids = knowledgeDocumentIds
       }
+      if (privateKnowledgeDocumentIds?.length) payload.private_knowledge_document_ids = privateKnowledgeDocumentIds
       if (skillId) payload.skill_id = skillId
       void sendStreamRequest(
         payload,
@@ -278,6 +281,7 @@ export function useChatHandler({
       config,
       channelId,
       knowledgeDocumentIds,
+      privateKnowledgeDocumentIds,
       skillId,
       parameterEnabled,
       sendStreamRequest,
@@ -302,6 +306,7 @@ export function useChatHandler({
       if (knowledgeDocumentIds?.length) {
         payload.knowledge_document_ids = knowledgeDocumentIds
       }
+      if (privateKnowledgeDocumentIds?.length) payload.private_knowledge_document_ids = privateKnowledgeDocumentIds
       if (skillId) payload.skill_id = skillId
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
@@ -362,6 +367,7 @@ export function useChatHandler({
       config,
       channelId,
       knowledgeDocumentIds,
+      privateKnowledgeDocumentIds,
       skillId,
       parameterEnabled,
       stopStream,

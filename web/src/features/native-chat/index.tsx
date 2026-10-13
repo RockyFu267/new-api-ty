@@ -42,6 +42,7 @@ import type {
 
 import { getChannelModels } from './api'
 import type { ChannelModel, KnowledgeDocument } from './types'
+import { loadPrivateKnowledgeDocuments, type PrivateKnowledgeDocument } from '@/features/private-knowledge-base/api'
 
 async function getKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
   const response = await api.get('/api/user/chat/knowledge-documents')
@@ -70,12 +71,14 @@ function ChannelChatSession(props: {
     DEFAULT_PARAMETER_ENABLED
   )
   const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>([])
+  const [selectedPrivateKnowledgeIds, setSelectedPrivateKnowledgeIds] = useState<number[]>([])
   const [showcaseSkillEnabled, setShowcaseSkillEnabled] = useState(false)
   const appliedSkillMessages = useRef(new Set<string>())
   const knowledgeQuery = useQuery({
     queryKey: ['knowledge-documents-user'],
     queryFn: getKnowledgeDocuments,
   })
+  const privateKnowledgeQuery = useQuery({ queryKey: ['private-knowledge-documents'], queryFn: loadPrivateKnowledgeDocuments })
   const skillQuery = useQuery({
     queryKey: ['showcase-skill-user'],
     queryFn: getAvailableSkill,
@@ -106,6 +109,7 @@ function ChannelChatSession(props: {
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
     channelId: props.target.channel_id,
     knowledgeDocumentIds: selectedKnowledgeIds,
+    privateKnowledgeDocumentIds: selectedPrivateKnowledgeIds,
     skillId: showcaseSkillEnabled ? 'showcase-designer' : undefined,
     config,
     parameterEnabled,
@@ -182,9 +186,21 @@ function ChannelChatSession(props: {
     () => buildKnowledgeTree(knowledgeQuery.data ?? []),
     [knowledgeQuery.data]
   )
+  const privateKnowledgeTree = useMemo(() => buildKnowledgeTree(privateKnowledgeQuery.data?.documents ?? [], privateKnowledgeQuery.data?.directories ?? []), [privateKnowledgeQuery.data])
 
   const toggleDocuments = (ids: number[], checked: boolean) => {
     setSelectedKnowledgeIds((current) => {
+      const next = new Set(current)
+      for (const id of ids) {
+        if (checked) next.add(id)
+        else next.delete(id)
+      }
+      return [...next]
+    })
+  }
+
+  const togglePrivateDocuments = (ids: number[], checked: boolean) => {
+    setSelectedPrivateKnowledgeIds((current) => {
       const next = new Set(current)
       for (const id of ids) {
         if (checked) next.add(id)
@@ -265,6 +281,17 @@ function ChannelChatSession(props: {
     )
   }
 
+  const renderPrivateKnowledgeNode = (node: KnowledgeTreeNode<PrivateKnowledgeDocument>, depth = 0): ReactNode => {
+    if (node.kind === 'directory') {
+      const ids = collectKnowledgeDocumentIds(node)
+      const selectedCount = ids.filter((id) => selectedPrivateKnowledgeIds.includes(id)).length
+      return <div key={`private-directory:${node.path}`}><label className='bg-muted/30 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 font-medium' style={{ marginLeft: `${depth * 20}px` }}><Checkbox checked={selectedCount === ids.length && ids.length > 0} indeterminate={selectedCount > 0 && selectedCount < ids.length} onCheckedChange={(value) => togglePrivateDocuments(ids, value === true)} /><Folder className='text-violet-500 size-4' /><span>{node.name}</span><span className='text-muted-foreground text-xs'>{selectedCount}/{ids.length}</span></label><div className='mt-1 space-y-1'>{node.children.map((child) => renderPrivateKnowledgeNode(child, depth + 1))}</div></div>
+    }
+    const document = node.document
+    if (!document) return null
+    return <label key={`private-file:${document.id}`} className='flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm' style={{ marginLeft: `${depth * 20}px` }}><Checkbox checked={selectedPrivateKnowledgeIds.includes(document.id)} onCheckedChange={(value) => togglePrivateDocuments([document.id], value === true)} /><FileText className='text-muted-foreground size-3.5' /><span>{node.name}</span></label>
+  }
+
   return (
     <div className='relative flex size-full min-h-0 flex-col overflow-hidden'>
       <div className='border-border flex items-center gap-3 border-b px-4 py-3'>
@@ -293,6 +320,8 @@ function ChannelChatSession(props: {
           </div>
         </div>
       ) : null}
+
+      {(privateKnowledgeQuery.data?.documents.length ?? 0) > 0 ? <div className='bg-violet-500/5 max-h-48 overflow-auto border-b px-4 py-3'><div className='mb-2 flex items-center justify-between'><p className='text-sm font-medium'>选择我的私有知识库</p><span className='text-muted-foreground text-xs'>已选 {selectedPrivateKnowledgeIds.length} 个文件</span></div><div className='rounded-lg border bg-background p-2'>{renderPrivateKnowledgeNode(privateKnowledgeTree)}</div></div> : null}
 
       {skillQuery.data ? <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
         <div className='flex items-center gap-3'><div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'><Sparkles className='size-4' /></div><div><p className='text-sm font-medium'>{skillQuery.data.name} Skill</p><p className='text-muted-foreground text-xs'>{skillQuery.data.description}</p></div></div>
