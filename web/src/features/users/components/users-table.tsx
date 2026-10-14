@@ -32,7 +32,7 @@ import {
 import { useMediaQuery } from '@/hooks'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 
-import { getUsers, searchUsers } from '../api'
+import { getDepartments, getUsers, searchUsers } from '../api'
 import {
   USER_STATUS,
   getUserStatusOptions,
@@ -61,6 +61,10 @@ function isDisabledUserRow(user: User) {
 
 export function UsersTable() {
   const { t } = useTranslation()
+  const departments = useQuery({
+    queryKey: ['departments'],
+    queryFn: getDepartments,
+  })
   const columns = useUsersColumns()
   const { refreshTrigger } = useUsers()
   const isMobile = useMediaQuery('(max-width: 640px)')
@@ -80,11 +84,18 @@ export function UsersTable() {
     pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
     globalFilter: { enabled: true, key: 'filter' },
     columnFilters: [
+      { columnId: 'department_id', searchKey: 'department', type: 'array' },
       { columnId: 'status', searchKey: 'status', type: 'array' },
       { columnId: 'role', searchKey: 'role', type: 'array' },
       { columnId: 'group', searchKey: 'group', type: 'string' },
     ],
   })
+  const departmentFilter =
+    (
+      columnFilters.find((filter) => filter.id === 'department_id')?.value as
+        | string[]
+        | undefined
+    )?.[0] ?? ''
   const statusFilter =
     (columnFilters.find((filter) => filter.id === 'status')?.value as
       | string[]
@@ -129,13 +140,17 @@ export function UsersTable() {
       statusFilter,
       roleFilter,
       groupFilter,
+      departmentFilter,
       sortParams,
       refreshTrigger,
     ],
     queryFn: async () => {
       const hasFilter = globalFilter?.trim()
       const hasColumnFilter =
-        statusFilter.length > 0 || roleFilter.length > 0 || Boolean(groupFilter)
+        statusFilter.length > 0 ||
+        roleFilter.length > 0 ||
+        Boolean(groupFilter) ||
+        departmentFilter !== ''
       const params = {
         p: pagination.pageIndex + 1,
         page_size: pagination.pageSize,
@@ -150,6 +165,7 @@ export function UsersTable() {
               status: statusFilter[0] ?? '',
               role: roleFilter[0] ?? '',
               group: groupFilter,
+              department_id: departmentFilter,
             })
           : await getUsers(params)
 
@@ -219,6 +235,18 @@ export function UsersTable() {
         searchDebounceMs: 500,
         filters: [
           {
+            columnId: 'department_id',
+            title: t('Department'),
+            options: [
+              { label: t('Unassigned'), value: '0' },
+              ...(departments.data ?? []).map((item) => ({
+                label: item.name,
+                value: String(item.id),
+              })),
+            ],
+            singleSelect: true,
+          },
+          {
             columnId: 'status',
             title: t('Status'),
             options: getUserStatusOptions(t),
@@ -232,13 +260,10 @@ export function UsersTable() {
           },
         ],
       }}
-      getRowClassName={(row, { isMobile }) =>
-        isDisabledUserRow(row.original)
-          ? isMobile
-            ? DISABLED_ROW_MOBILE
-            : DISABLED_ROW_DESKTOP
-          : undefined
-      }
+      getRowClassName={(row, { isMobile }) => {
+        if (!isDisabledUserRow(row.original)) return undefined
+        return isMobile ? DISABLED_ROW_MOBILE : DISABLED_ROW_DESKTOP
+      }}
       bulkActions={<DataTableBulkActions table={table} />}
     />
   )

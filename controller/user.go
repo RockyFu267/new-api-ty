@@ -333,6 +333,10 @@ func GetAllUsers(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err = model.EnrichUsersWithDepartment(users); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	if err = model.EnrichUsersWithAuthSource(users); err != nil {
 		common.ApiError(c, err)
 		return
@@ -346,6 +350,15 @@ func GetAllUsers(c *gin.Context) {
 }
 
 func SearchUsers(c *gin.Context) {
+	var departmentId *int
+	if value := c.Query("department_id"); value != "" {
+		id, err := strconv.Atoi(value)
+		if err != nil || id < 0 {
+			common.ApiError(c, fmt.Errorf("invalid department filter"))
+			return
+		}
+		departmentId = &id
+	}
 	keyword := c.Query("keyword")
 	group := c.Query("group")
 	var role *int
@@ -362,8 +375,12 @@ func SearchUsers(c *gin.Context) {
 	}
 	pageInfo := common.GetPageQuery(c)
 	sortOptions := model.NewUserSortOptions(c.Query("sort_by"), c.Query("sort_order"))
-	users, total, err := model.SearchUsers(keyword, group, role, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), sortOptions)
+	users, total, err := model.SearchUsersWithDepartment(keyword, group, role, status, departmentId, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), sortOptions)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err = model.EnrichUsersWithDepartment(users); err != nil {
 		common.ApiError(c, err)
 		return
 	}
@@ -396,6 +413,10 @@ func GetUser(c *gin.Context) {
 	myRole := c.GetInt("role")
 	if !canManageTargetRole(myRole, user.Role) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionSameLevel)
+		return
+	}
+	if err := model.EnrichUsersWithDepartment([]*model.User{user}); err != nil {
+		common.ApiError(c, err)
 		return
 	}
 	user.AdminPermissions = authz.Capabilities(user.Id, user.Role)

@@ -1,27 +1,46 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Bot, Download, ExternalLink, FileText, Folder, Loader2, Server, Sparkles } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bot,
+  Download,
+  ExternalLink,
+  FileText,
+  Folder,
+  Loader2,
+  Server,
+  Sparkles,
+} from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { PlaygroundChat } from '@/features/playground/components/chat/playground-chat'
-import { PlaygroundInput } from '@/features/playground/components/input/playground-input'
-import { api } from '@/lib/api'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { extractShowcaseDirective, inferShowcaseDirective } from '@/features/skill-showcase/directive'
 import {
   buildKnowledgeTree,
   collectKnowledgeDocumentIds,
   type KnowledgeTreeNode,
 } from '@/features/knowledge-base/tree'
+import { PlaygroundChat } from '@/features/playground/components/chat/playground-chat'
+import { PlaygroundInput } from '@/features/playground/components/input/playground-input'
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_PARAMETER_ENABLED,
+} from '@/features/playground/constants'
 import {
   useChatHandler,
   usePlaygroundConversation,
@@ -30,19 +49,25 @@ import {
   applyMessageStateUpdate,
   type MessageStateUpdater,
 } from '@/features/playground/lib'
-import {
-  DEFAULT_CONFIG,
-  DEFAULT_PARAMETER_ENABLED,
-} from '@/features/playground/constants'
 import type {
   Message,
   ParameterEnabled,
   PlaygroundConfig,
 } from '@/features/playground/types'
+import {
+  loadPrivateKnowledgeDocuments,
+  type PrivateKnowledgeDocument,
+} from '@/features/private-knowledge-base/api'
+import {
+  extractShowcaseDirective,
+  inferShowcaseDirective,
+} from '@/features/skill-showcase/directive'
+import { api } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth-store'
+import { useChatParameterStore } from '@/stores/chat-parameter-store'
 
 import { getChannelModels } from './api'
 import type { ChannelModel, KnowledgeDocument } from './types'
-import { loadPrivateKnowledgeDocuments, type PrivateKnowledgeDocument } from '@/features/private-knowledge-base/api'
 
 async function getKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
   const response = await api.get('/api/user/chat/knowledge-documents')
@@ -61,6 +86,18 @@ function ChannelChatSession(props: {
   onBack: () => void
 }) {
   const { t } = useTranslation()
+  const userId = useAuthStore((state) => state.auth.user?.id)
+  const parameterTarget = JSON.stringify([
+    userId,
+    props.target.channel_id,
+    props.target.model,
+  ])
+  const customParametersEnabled = useChatParameterStore(
+    (state) => state.enabledByTarget[parameterTarget] ?? true
+  )
+  const setCustomParametersEnabled = useChatParameterStore(
+    (state) => state.setEnabled
+  )
   const [messages, setMessages] = useState<Message[]>([])
   const [config, setConfig] = useState<PlaygroundConfig>({
     ...DEFAULT_CONFIG,
@@ -71,21 +108,26 @@ function ChannelChatSession(props: {
     DEFAULT_PARAMETER_ENABLED
   )
   const [selectedKnowledgeIds, setSelectedKnowledgeIds] = useState<number[]>([])
-  const [selectedPrivateKnowledgeIds, setSelectedPrivateKnowledgeIds] = useState<number[]>([])
+  const [selectedPrivateKnowledgeIds, setSelectedPrivateKnowledgeIds] =
+    useState<number[]>([])
   const [showcaseSkillEnabled, setShowcaseSkillEnabled] = useState(false)
   const appliedSkillMessages = useRef(new Set<string>())
   const knowledgeQuery = useQuery({
     queryKey: ['knowledge-documents-user'],
     queryFn: getKnowledgeDocuments,
   })
-  const privateKnowledgeQuery = useQuery({ queryKey: ['private-knowledge-documents'], queryFn: loadPrivateKnowledgeDocuments })
+  const privateKnowledgeQuery = useQuery({
+    queryKey: ['private-knowledge-documents'],
+    queryFn: loadPrivateKnowledgeDocuments,
+  })
   const skillQuery = useQuery({
     queryKey: ['showcase-skill-user'],
     queryFn: getAvailableSkill,
   })
 
   useEffect(() => {
-    if (!skillQuery.isPending && !skillQuery.data) setShowcaseSkillEnabled(false)
+    if (!skillQuery.isPending && !skillQuery.data)
+      {setShowcaseSkillEnabled(false)}
   }, [skillQuery.data, skillQuery.isPending])
 
   const updateMessages = useCallback((updater: MessageStateUpdater) => {
@@ -107,6 +149,7 @@ function ChannelChatSession(props: {
   )
 
   const { sendChat, stopGeneration, isGenerating } = useChatHandler({
+    customParametersEnabled,
     channelId: props.target.channel_id,
     knowledgeDocumentIds: selectedKnowledgeIds,
     privateKnowledgeDocumentIds: selectedPrivateKnowledgeIds,
@@ -119,25 +162,39 @@ function ChannelChatSession(props: {
   useEffect(() => {
     if (!showcaseSkillEnabled) return
     const message = messages.at(-1)
-    if (!message || message.from !== 'assistant' || (message.status !== 'complete' && !message.isContentComplete)) return
+    if (
+      !message ||
+      message.from !== 'assistant' ||
+      (message.status !== 'complete' && !message.isContentComplete)
+    )
+      {return}
     const version = message.versions.at(-1)
     const executionKey = `${message.key}:${version?.id ?? ''}`
     if (!version || appliedSkillMessages.current.has(executionKey)) return
-    const userMessage = [...messages].reverse().find((item) => item.from === 'user')
+    const userMessage = [...messages]
+      .reverse()
+      .find((item) => item.from === 'user')
     const userContent = userMessage?.versions.at(-1)?.content ?? ''
-    const directive = extractShowcaseDirective(version.content) ?? inferShowcaseDirective(userContent, version.content)
+    const directive =
+      extractShowcaseDirective(version.content) ??
+      inferShowcaseDirective(userContent, version.content)
     if (!directive) {
       appliedSkillMessages.current.add(executionKey)
-      toast.warning('模型没有返回可执行的 Skill 指令，请明确指定展示模板或修改内容')
+      toast.warning(
+        '模型没有返回可执行的 Skill 指令，请明确指定展示模板或修改内容'
+      )
       return
     }
     appliedSkillMessages.current.add(executionKey)
-    void api.post('/api/skill-showcase/apply', directive).then(() => {
-      toast.success('Skill 已执行，展示页已实时更新')
-    }).catch(() => {
-      appliedSkillMessages.current.delete(executionKey)
-      toast.error('Skill 指令执行失败')
-    })
+    void api
+      .post('/api/skill-showcase/apply', directive)
+      .then(() => {
+        toast.success('Skill 已执行，展示页已实时更新')
+      })
+      .catch(() => {
+        appliedSkillMessages.current.delete(executionKey)
+        toast.error('Skill 指令执行失败')
+      })
   }, [messages, showcaseSkillEnabled])
 
   const conversation = usePlaygroundConversation({
@@ -168,9 +225,12 @@ function ChannelChatSession(props: {
 
   const downloadKnowledge = async (knowledgeDocument: KnowledgeDocument) => {
     try {
-      const response = await api.get(`/api/user/chat/knowledge-documents/${knowledgeDocument.id}/download`, {
-        responseType: 'blob',
-      })
+      const response = await api.get(
+        `/api/user/chat/knowledge-documents/${knowledgeDocument.id}/download`,
+        {
+          responseType: 'blob',
+        }
+      )
       const url = URL.createObjectURL(response.data as Blob)
       const anchor = document.createElement('a')
       anchor.href = url
@@ -186,7 +246,14 @@ function ChannelChatSession(props: {
     () => buildKnowledgeTree(knowledgeQuery.data ?? []),
     [knowledgeQuery.data]
   )
-  const privateKnowledgeTree = useMemo(() => buildKnowledgeTree(privateKnowledgeQuery.data?.documents ?? [], privateKnowledgeQuery.data?.directories ?? []), [privateKnowledgeQuery.data])
+  const privateKnowledgeTree = useMemo(
+    () =>
+      buildKnowledgeTree(
+        privateKnowledgeQuery.data?.documents ?? [],
+        privateKnowledgeQuery.data?.directories ?? []
+      ),
+    [privateKnowledgeQuery.data]
+  )
 
   const toggleDocuments = (ids: number[], checked: boolean) => {
     setSelectedKnowledgeIds((current) => {
@@ -281,15 +348,60 @@ function ChannelChatSession(props: {
     )
   }
 
-  const renderPrivateKnowledgeNode = (node: KnowledgeTreeNode<PrivateKnowledgeDocument>, depth = 0): ReactNode => {
+  const renderPrivateKnowledgeNode = (
+    node: KnowledgeTreeNode<PrivateKnowledgeDocument>,
+    depth = 0
+  ): ReactNode => {
     if (node.kind === 'directory') {
       const ids = collectKnowledgeDocumentIds(node)
-      const selectedCount = ids.filter((id) => selectedPrivateKnowledgeIds.includes(id)).length
-      return <div key={`private-directory:${node.path}`}><label className='bg-muted/30 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 font-medium' style={{ marginLeft: `${depth * 20}px` }}><Checkbox checked={selectedCount === ids.length && ids.length > 0} indeterminate={selectedCount > 0 && selectedCount < ids.length} onCheckedChange={(value) => togglePrivateDocuments(ids, value === true)} /><Folder className='text-violet-500 size-4' /><span>{node.name}</span><span className='text-muted-foreground text-xs'>{selectedCount}/{ids.length}</span></label><div className='mt-1 space-y-1'>{node.children.map((child) => renderPrivateKnowledgeNode(child, depth + 1))}</div></div>
+      const selectedCount = ids.filter((id) =>
+        selectedPrivateKnowledgeIds.includes(id)
+      ).length
+      return (
+        <div key={`private-directory:${node.path}`}>
+          <label
+            className='bg-muted/30 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 font-medium'
+            style={{ marginLeft: `${depth * 20}px` }}
+          >
+            <Checkbox
+              checked={selectedCount === ids.length && ids.length > 0}
+              indeterminate={selectedCount > 0 && selectedCount < ids.length}
+              onCheckedChange={(value) =>
+                togglePrivateDocuments(ids, value === true)
+              }
+            />
+            <Folder className='size-4 text-violet-500' />
+            <span>{node.name}</span>
+            <span className='text-muted-foreground text-xs'>
+              {selectedCount}/{ids.length}
+            </span>
+          </label>
+          <div className='mt-1 space-y-1'>
+            {node.children.map((child) =>
+              renderPrivateKnowledgeNode(child, depth + 1)
+            )}
+          </div>
+        </div>
+      )
     }
     const document = node.document
     if (!document) return null
-    return <label key={`private-file:${document.id}`} className='flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm' style={{ marginLeft: `${depth * 20}px` }}><Checkbox checked={selectedPrivateKnowledgeIds.includes(document.id)} onCheckedChange={(value) => togglePrivateDocuments([document.id], value === true)} /><FileText className='text-muted-foreground size-3.5' /><span>{node.name}</span></label>
+    return (
+      <label
+        key={`private-file:${document.id}`}
+        className='flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm'
+        style={{ marginLeft: `${depth * 20}px` }}
+      >
+        <Checkbox
+          checked={selectedPrivateKnowledgeIds.includes(document.id)}
+          onCheckedChange={(value) =>
+            togglePrivateDocuments([document.id], value === true)
+          }
+        />
+        <FileText className='text-muted-foreground size-3.5' />
+        <span>{node.name}</span>
+      </label>
+    )
   }
 
   return (
@@ -307,26 +419,73 @@ function ChannelChatSession(props: {
         <div className='min-w-0'>
           <p className='truncate font-medium'>{props.target.model}</p>
           <p className='text-muted-foreground truncate text-xs'>
-            {props.target.channel_name} · {props.target.group} · #{props.target.channel_id}
+            {props.target.channel_name} · {props.target.group} · #
+            {props.target.channel_id}
           </p>
         </div>
       </div>
 
       {(knowledgeQuery.data?.length ?? 0) > 0 ? (
         <div className='bg-muted/30 max-h-48 overflow-auto border-b px-4 py-3'>
-          <div className='mb-2 flex items-center justify-between'><p className='text-sm font-medium'>选择本次对话使用的知识库</p><span className='text-muted-foreground text-xs'>已选 {selectedKnowledgeIds.length} 个文件</span></div>
-          <div className='rounded-lg border bg-background p-2'>
+          <div className='mb-2 flex items-center justify-between'>
+            <p className='text-sm font-medium'>选择本次对话使用的知识库</p>
+            <span className='text-muted-foreground text-xs'>
+              已选 {selectedKnowledgeIds.length} 个文件
+            </span>
+          </div>
+          <div className='bg-background rounded-lg border p-2'>
             {renderKnowledgeNode(knowledgeTree)}
           </div>
         </div>
       ) : null}
 
-      {(privateKnowledgeQuery.data?.documents.length ?? 0) > 0 ? <div className='bg-violet-500/5 max-h-48 overflow-auto border-b px-4 py-3'><div className='mb-2 flex items-center justify-between'><p className='text-sm font-medium'>选择我的私有知识库</p><span className='text-muted-foreground text-xs'>已选 {selectedPrivateKnowledgeIds.length} 个文件</span></div><div className='rounded-lg border bg-background p-2'>{renderPrivateKnowledgeNode(privateKnowledgeTree)}</div></div> : null}
+      {(privateKnowledgeQuery.data?.documents.length ?? 0) > 0 ? (
+        <div className='max-h-48 overflow-auto border-b bg-violet-500/5 px-4 py-3'>
+          <div className='mb-2 flex items-center justify-between'>
+            <p className='text-sm font-medium'>选择我的私有知识库</p>
+            <span className='text-muted-foreground text-xs'>
+              已选 {selectedPrivateKnowledgeIds.length} 个文件
+            </span>
+          </div>
+          <div className='bg-background rounded-lg border p-2'>
+            {renderPrivateKnowledgeNode(privateKnowledgeTree)}
+          </div>
+        </div>
+      ) : null}
 
-      {skillQuery.data ? <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
-        <div className='flex items-center gap-3'><div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'><Sparkles className='size-4' /></div><div><p className='text-sm font-medium'>{skillQuery.data.name} Skill</p><p className='text-muted-foreground text-xs'>{skillQuery.data.description}</p></div></div>
-        <div className='flex items-center gap-3'><Button type='button' variant='outline' size='sm' onClick={() => window.open('/skill-showcase', '_blank')}><ExternalLink className='mr-1 size-3.5' />打开展示页</Button><Switch checked={showcaseSkillEnabled} onCheckedChange={setShowcaseSkillEnabled} aria-label='启用企业展示屏设计师 Skill' /></div>
-      </div> : null}
+      {skillQuery.data ? (
+        <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
+          <div className='flex items-center gap-3'>
+            <div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'>
+              <Sparkles className='size-4' />
+            </div>
+            <div>
+              <p className='text-sm font-medium'>
+                {skillQuery.data.name} Skill
+              </p>
+              <p className='text-muted-foreground text-xs'>
+                {skillQuery.data.description}
+              </p>
+            </div>
+          </div>
+          <div className='flex items-center gap-3'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => window.open('/skill-showcase', '_blank')}
+            >
+              <ExternalLink className='mr-1 size-3.5' />
+              打开展示页
+            </Button>
+            <Switch
+              checked={showcaseSkillEnabled}
+              onCheckedChange={setShowcaseSkillEnabled}
+              aria-label='启用企业展示屏设计师 Skill'
+            />
+          </div>
+        </div>
+      ) : null}
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat
@@ -340,7 +499,9 @@ function ChannelChatSession(props: {
           editingKey={conversation.editingMessageKey}
           onCancelEdit={conversation.handleEditOpenChange}
           onSaveEdit={(content) => conversation.applyEdit(content, false)}
-          onSaveEditAndSubmit={(content) => conversation.applyEdit(content, true)}
+          onSaveEditAndSubmit={(content) =>
+            conversation.applyEdit(content, true)
+          }
           emptyStateTitle={props.target.prompt_title}
           emptyStateDescription={props.target.prompt_description}
         />
@@ -348,6 +509,11 @@ function ChannelChatSession(props: {
 
       <div className='mx-auto w-full max-w-4xl'>
         <PlaygroundInput
+          customParametersEnabled={customParametersEnabled}
+          onCustomParametersEnabledChange={(enabled) =>
+            setCustomParametersEnabled(parameterTarget, enabled)
+          }
+          showSearch={false}
           config={config}
           disabled={isGenerating}
           groups={groups}
@@ -430,7 +596,9 @@ export function NativeChat() {
         {channelModels.length === 0 ? (
           <div className='border-border rounded-xl border border-dashed p-12 text-center'>
             <Bot className='text-muted-foreground mx-auto size-10' />
-            <p className='mt-4 font-medium'>{t('No channel models available')}</p>
+            <p className='mt-4 font-medium'>
+              {t('No channel models available')}
+            </p>
           </div>
         ) : (
           <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
@@ -455,7 +623,8 @@ export function NativeChat() {
                       </div>
                     </div>
                     <p className='text-muted-foreground pt-2 text-xs'>
-                      {item.group} · #{item.channel_id} · {t('Channel type')} {item.channel_type}
+                      {item.group} · #{item.channel_id} · {t('Channel type')}{' '}
+                      {item.channel_type}
                     </p>
                   </CardHeader>
                 </Card>

@@ -144,6 +144,10 @@ func SetApiRouter(router *gin.Engine) {
 			adminRoute := userRoute.Group("/")
 			adminRoute.Use(middleware.AdminAuth())
 			{
+				adminRoute.GET("/departments", controller.ListDepartments)
+				adminRoute.POST("/departments", controller.SaveDepartment)
+				adminRoute.DELETE("/departments/:id", controller.DeleteDepartment)
+				adminRoute.PUT("/:id/department", controller.AssignUserDepartment)
 				adminRoute.GET("/", controller.GetAllUsers)
 				adminRoute.GET("/topup", controller.GetAllTopUps)
 				adminRoute.POST("/topup/complete", controller.AdminCompleteTopUp)

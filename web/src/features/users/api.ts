@@ -21,6 +21,7 @@ import { api } from '@/lib/api'
 import type { CustomOAuthBinding } from '@/lib/oauth'
 
 import type {
+  Department,
   User,
   GetUsersParams,
   GetUsersResponse,
@@ -60,6 +61,7 @@ export async function searchUsers(
   params: SearchUsersParams
 ): Promise<GetUsersResponse> {
   const {
+    department_id,
     keyword = '',
     group = '',
     role = '',
@@ -70,6 +72,9 @@ export async function searchUsers(
     sort_order,
   } = params
   const queryParams = new URLSearchParams()
+  if (department_id !== undefined && department_id !== '') {
+    queryParams.set('department_id', department_id)
+  }
   queryParams.set('keyword', keyword)
   queryParams.set('group', group)
   if (role) queryParams.set('role', role)
@@ -211,4 +216,38 @@ export async function adminUnbindCustomOAuth(
     `/api/user/${userId}/oauth/bindings/${providerId}`
   )
   return res.data
+}
+
+export async function getDepartments(): Promise<Department[]> {
+  const response = await api.get('/api/user/departments')
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Unable to load departments')
+  }
+  return response.data.data ?? []
+}
+
+export async function saveDepartment(id: number, name: string): Promise<void> {
+  const response = await api.post('/api/user/departments', { id, name })
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Unable to save department')
+  }
+}
+
+export async function deleteDepartment(id: number): Promise<void> {
+  const response = await api.delete(`/api/user/departments/${id}`)
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Unable to delete department')
+  }
+}
+
+export async function assignUserDepartment(
+  userId: number,
+  departmentId: number
+): Promise<void> {
+  const response = await api.put(`/api/user/${userId}/department`, {
+    department_id: departmentId,
+  })
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Unable to assign department')
+  }
 }

@@ -47,6 +47,9 @@ import type { ParameterEnabled, PlaygroundConfig } from '../../types'
 import { PlaygroundParameterPanel } from './playground-parameter-panel'
 
 type PlaygroundInputToolsProps = {
+  customParametersEnabled?: boolean
+  onCustomParametersEnabledChange?: (enabled: boolean) => void
+  showSearch?: boolean
   config: PlaygroundConfig
   disabled?: boolean
   hasMessages?: boolean
@@ -63,6 +66,9 @@ type PlaygroundInputToolsProps = {
 }
 
 export function PlaygroundInputTools({
+  customParametersEnabled,
+  onCustomParametersEnabledChange,
+  showSearch,
   config,
   disabled,
   hasMessages = false,
@@ -130,26 +136,31 @@ export function PlaygroundInputTools({
           </DropdownMenu>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <PromptInputButton
-                aria-label={t('Search')}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium'
-                disabled={disabled}
-                onClick={handleSearchAction}
-                variant='ghost'
-              >
-                <GlobeIcon size={16} />
-              </PromptInputButton>
-            }
-          />
-          <TooltipContent>
-            <p>{t('Search')}</p>
-          </TooltipContent>
-        </Tooltip>
+        {showSearch !== false && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <PromptInputButton
+                  aria-label={t('Search')}
+                  className='text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium'
+                  disabled={disabled}
+                  onClick={handleSearchAction}
+                  variant='ghost'
+                >
+                  <GlobeIcon size={16} />
+                </PromptInputButton>
+              }
+            />
+            <TooltipContent>
+              <p>{t('Search')}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         <PlaygroundParameterPanel
+          customParametersEnabled={customParametersEnabled}
+          onCustomParametersEnabledChange={onCustomParametersEnabledChange}
+          showSearch={showSearch}
           config={config}
           disabled={disabled}
           onConfigChange={onConfigChange}

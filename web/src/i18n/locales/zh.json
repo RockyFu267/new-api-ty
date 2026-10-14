@@ -1,4 +1,4 @@
-﻿{
+{
   "translation": {
     "360": "360",
     "1000": "1000",
@@ -5322,6 +5322,23 @@
     "Zero retention": "零数据保留",
     "Zhipu": "智谱",
     "Zhipu V4": "智谱 V4",
-    "Zoom": "缩放"
+    "Zoom": "缩放",
+    "Enable custom parameters": "启用自定义参数",
+    "When disabled, the provider uses its default parameters.": "关闭后使用模型服务的默认参数。",
+    "Department": "部门",
+    "Unassigned": "未分配",
+    "Department updated": "部门归属已更新",
+    "Department for {{username}}": "{{username}} 的部门",
+    "Manage departments": "部门管理",
+    "Department saved": "部门已保存",
+    "Department deleted": "部门已删除",
+    "Create flat departments and assign users from the users list.": "创建平级部门，在用户列表中调整用户所属部门。",
+    "Department name": "部门名称",
+    "No departments yet": "暂无部门",
+    "{{count}} users": "{{count}} 位用户",
+    "Rename {{name}}": "重命名 {{name}}",
+    "Delete {{name}}": "删除 {{name}}",
+    "Delete department": "删除部门",
+    "Delete {{name}}? Its {{count}} users will become unassigned. User accounts will be kept.": "删除“{{name}}”？该部门的 {{count}} 位用户将变为未分配，用户账号会保留。"
   }
 }

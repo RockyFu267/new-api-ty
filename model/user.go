@@ -77,6 +77,8 @@ func resolveUserSortOptions(sortOptions []UserSortOptions) UserSortOptions {
 // User if you add sensitive fields, don't forget to clean them in setupLogin function.
 // Otherwise, the sensitive information will be saved on local storage in plain text!
 type User struct {
+	DepartmentId     int                        `json:"department_id" gorm:"-:all"`
+	DepartmentName   string                     `json:"department_name" gorm:"-:all"`
 	Id               int                        `json:"id"`
 	Username         string                     `json:"username" gorm:"unique;index" validate:"max=20"`
 	Password         string                     `json:"password" gorm:"not null;" validate:"min=8,max=20"`
@@ -423,6 +425,10 @@ func GetAllUsers(pageInfo *common.PageInfo, sortOptions ...UserSortOptions) (use
 }
 
 func SearchUsers(keyword string, group string, role *int, status *int, startIdx int, num int, sortOptions ...UserSortOptions) ([]*User, int64, error) {
+	return SearchUsersWithDepartment(keyword, group, role, status, nil, startIdx, num, sortOptions...)
+}
+
+func SearchUsersWithDepartment(keyword string, group string, role *int, status *int, departmentId *int, startIdx int, num int, sortOptions ...UserSortOptions) ([]*User, int64, error) {
 	var users []*User
 	var total int64
 	var err error
@@ -440,6 +446,14 @@ func SearchUsers(keyword string, group string, role *int, status *int, startIdx 
 
 	// 构建基础查询
 	query := tx.Unscoped().Model(&User{})
+	if departmentId != nil {
+		members := tx.Model(&UserDepartment{}).Select("user_id")
+		if *departmentId == 0 {
+			query = query.Where("id NOT IN (?)", members)
+		} else {
+			query = query.Where("id IN (?)", members.Where("department_id = ?", *departmentId))
+		}
+	}
 
 	// 构建搜索条件
 	likeCondition := "username LIKE ? OR email LIKE ? OR display_name LIKE ?"

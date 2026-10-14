@@ -37,6 +37,9 @@ import { PlaygroundInputControls } from './playground-input-controls'
 import { PlaygroundInputTools } from './playground-input-tools'
 
 interface PlaygroundInputProps {
+  customParametersEnabled?: boolean
+  onCustomParametersEnabledChange?: (enabled: boolean) => void
+  showSearch?: boolean
   config: PlaygroundConfig
   onSubmit: (text: string) => void
   onStop?: () => void
@@ -63,6 +66,9 @@ interface PlaygroundInputProps {
 }
 
 export function PlaygroundInput({
+  customParametersEnabled,
+  onCustomParametersEnabledChange,
+  showSearch,
   config,
   onSubmit,
   onStop,
@@ -126,6 +132,11 @@ export function PlaygroundInput({
             text={text}
             tools={
               <PlaygroundInputTools
+                customParametersEnabled={customParametersEnabled}
+                onCustomParametersEnabledChange={
+                  onCustomParametersEnabledChange
+                }
+                showSearch={showSearch}
                 config={config}
                 disabled={disabled}
                 hasMessages={hasMessages}

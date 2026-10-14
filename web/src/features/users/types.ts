@@ -33,6 +33,8 @@ export const userRoleSchema = z.number()
 export type UserRole = z.infer<typeof userRoleSchema>
 
 export const userSchema = z.object({
+  department_id: z.number().optional(),
+  department_name: z.string().optional(),
   id: z.number(),
   username: z.string(),
   display_name: z.string(),
@@ -59,7 +61,7 @@ export const userSchema = z.object({
   last_login_at: z.number().optional(),
   DeletedAt: z.any().nullable().optional(),
   remark: z.string().optional(),
-	auth_source: z.string().optional(),
+  auth_source: z.string().optional(),
   admin_permissions: z
     .record(z.string(), z.record(z.string(), z.boolean()))
     .optional(),
@@ -107,7 +109,10 @@ export interface GetUsersResponse {
   }
 }
 
+export type Department = { id: number; name: string; user_count: number }
+
 export interface SearchUsersParams {
+  department_id?: string
   keyword?: string
   group?: string
   role?: string

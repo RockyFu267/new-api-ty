@@ -35,6 +35,7 @@ const usersSearchSchema = z.object({
     .array(z.enum(['1', '10', '100']))
     .optional()
     .catch([]),
+  department: z.array(z.string().regex(/^\d+$/)).optional().catch([]),
   group: z.string().optional().catch(''),
 })
 

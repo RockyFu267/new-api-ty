@@ -40,6 +40,7 @@ import {
 } from '../constants'
 import type { User } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
+import { DepartmentCell } from './departments'
 import { UserQuotaCell } from './user-quota-cell'
 
 export function useUsersColumns(): ColumnDef<User>[] {
@@ -122,13 +123,29 @@ export function useUsersColumns(): ColumnDef<User>[] {
       meta: { mobileTitle: true },
     },
     {
-	  accessorKey: 'auth_source',
-	  header: '来源',
-	  cell: ({ row }) => <StatusBadge label={(row.original.auth_source || 'local').toUpperCase()} variant={row.original.auth_source?.includes('ad') ? 'success' : 'neutral'} copyable={false} />,
-	  enableSorting: false,
-	  size: 110,
-	},
-	{
+      accessorKey: 'auth_source',
+      header: '来源',
+      cell: ({ row }) => (
+        <StatusBadge
+          label={(row.original.auth_source || 'local').toUpperCase()}
+          variant={
+            row.original.auth_source?.includes('ad') ? 'success' : 'neutral'
+          }
+          copyable={false}
+        />
+      ),
+      enableSorting: false,
+      size: 110,
+    },
+    {
+      accessorKey: 'department_id',
+      header: t('Department'),
+      cell: ({ row }) => <DepartmentCell user={row.original} />,
+      enableSorting: false,
+      size: 180,
+      meta: { mobileOrder: 15 },
+    },
+    {
       accessorKey: 'status',
       header: t('Status'),
       cell: ({ row }) => {

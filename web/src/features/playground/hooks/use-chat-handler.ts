@@ -38,6 +38,7 @@ import type { Message, PlaygroundConfig, ParameterEnabled } from '../types'
 import { useStreamRequest } from './use-stream-request'
 
 interface UseChatHandlerOptions {
+  customParametersEnabled?: boolean
   channelId?: number
   knowledgeDocumentIds?: number[]
   privateKnowledgeDocumentIds?: number[]
@@ -71,6 +72,7 @@ function mergePendingStreamChunk(
  * Hook for handling chat message sending and receiving
  */
 export function useChatHandler({
+  customParametersEnabled = true,
   channelId,
   knowledgeDocumentIds,
   privateKnowledgeDocumentIds,
@@ -260,7 +262,8 @@ export function useChatHandler({
       const payload = buildChatCompletionPayload(
         messages,
         config,
-        parameterEnabled
+        parameterEnabled,
+        customParametersEnabled
       )
       if (channelId) {
         payload.channel_id = channelId
@@ -268,7 +271,8 @@ export function useChatHandler({
       if (knowledgeDocumentIds?.length) {
         payload.knowledge_document_ids = knowledgeDocumentIds
       }
-      if (privateKnowledgeDocumentIds?.length) payload.private_knowledge_document_ids = privateKnowledgeDocumentIds
+      if (privateKnowledgeDocumentIds?.length)
+        {payload.private_knowledge_document_ids = privateKnowledgeDocumentIds}
       if (skillId) payload.skill_id = skillId
       void sendStreamRequest(
         payload,
@@ -283,6 +287,7 @@ export function useChatHandler({
       knowledgeDocumentIds,
       privateKnowledgeDocumentIds,
       skillId,
+      customParametersEnabled,
       parameterEnabled,
       sendStreamRequest,
       discardPendingStreamUpdates,
@@ -298,7 +303,8 @@ export function useChatHandler({
       const payload = buildChatCompletionPayload(
         messages,
         config,
-        parameterEnabled
+        parameterEnabled,
+        customParametersEnabled
       )
       if (channelId) {
         payload.channel_id = channelId
@@ -306,7 +312,8 @@ export function useChatHandler({
       if (knowledgeDocumentIds?.length) {
         payload.knowledge_document_ids = knowledgeDocumentIds
       }
-      if (privateKnowledgeDocumentIds?.length) payload.private_knowledge_document_ids = privateKnowledgeDocumentIds
+      if (privateKnowledgeDocumentIds?.length)
+        {payload.private_knowledge_document_ids = privateKnowledgeDocumentIds}
       if (skillId) payload.skill_id = skillId
       const generation = requestGenerationRef.current + 1
       const abortController = new AbortController()
@@ -369,6 +376,7 @@ export function useChatHandler({
       knowledgeDocumentIds,
       privateKnowledgeDocumentIds,
       skillId,
+      customParametersEnabled,
       parameterEnabled,
       stopStream,
       discardPendingStreamUpdates,

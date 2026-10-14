@@ -10,6 +10,8 @@
 
 ## 当前文档
 
+- `users/README.md`：管理员维护平级部门、用户归属和部门筛选。
+
 - `chat/README.md`：Chat 功能、导航入口收口及实现状态。
 - `auth/ldap-ad-assessment.md`：保留现有用户体系并接入 LDAP/AD 的可行性评估。
 - `knowledge-base/README.md`：知识库目录扫描、文件授权、Chat 检索以及树形交互需求。

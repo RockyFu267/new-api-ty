@@ -54,6 +54,9 @@ import {
 import type { ParameterEnabled, PlaygroundConfig } from '../../types'
 
 type PlaygroundParameterPanelProps = {
+  customParametersEnabled?: boolean
+  onCustomParametersEnabledChange?: (enabled: boolean) => void
+  showSearch?: boolean
   config: PlaygroundConfig
   disabled?: boolean
   onConfigChange: <K extends keyof PlaygroundConfig>(
@@ -72,6 +75,8 @@ type PlaygroundParameterContentProps = PlaygroundParameterPanelProps & {
 }
 
 function PlaygroundParameterContent({
+  customParametersEnabled = true,
+  onCustomParametersEnabledChange,
   compact = false,
   config,
   disabled,
@@ -101,6 +106,24 @@ function PlaygroundParameterContent({
         compact ? 'px-4 pb-4' : 'p-1'
       )}
     >
+      {onCustomParametersEnabledChange && (
+        <div className='flex items-center justify-between gap-3 rounded-lg border p-3'>
+          <div>
+            <p className='text-sm font-medium'>
+              {t('Enable custom parameters')}
+            </p>
+            <p className='text-muted-foreground text-xs'>
+              {t('When disabled, the provider uses its default parameters.')}
+            </p>
+          </div>
+          <Switch
+            aria-label={t('Enable custom parameters')}
+            checked={customParametersEnabled}
+            disabled={disabled}
+            onCheckedChange={onCustomParametersEnabledChange}
+          />
+        </div>
+      )}
       {PLAYGROUND_PARAMETER_CONTROLS.map((control) => {
         const enabled = parameterEnabled[control.key]
         const value = config[control.key]
@@ -110,7 +133,7 @@ function PlaygroundParameterContent({
           <div
             className={cn(
               'border-border/70 bg-background/60 grid gap-2 rounded-lg border p-3 transition-opacity',
-              (!enabled || disabled) && 'opacity-55'
+              (!enabled || disabled || !customParametersEnabled) && 'opacity-55'
             )}
             key={control.key}
           >
@@ -140,7 +163,7 @@ function PlaygroundParameterContent({
                   parameter: t(control.labelKey),
                 })}
                 checked={enabled}
-                disabled={disabled}
+                disabled={disabled || !customParametersEnabled}
                 onCheckedChange={(checked) =>
                   onParameterEnabledChange(control.key, checked)
                 }
@@ -151,7 +174,7 @@ function PlaygroundParameterContent({
             {control.valueType === 'slider' ? (
               <Slider
                 className='py-1.5'
-                disabled={disabled || !enabled}
+                disabled={disabled || !enabled || !customParametersEnabled}
                 id={controlId}
                 max={control.max}
                 min={control.min}
@@ -169,7 +192,7 @@ function PlaygroundParameterContent({
               />
             ) : (
               <Input
-                disabled={disabled || !enabled}
+                disabled={disabled || !enabled || !customParametersEnabled}
                 id={controlId}
                 inputMode='numeric'
                 max={control.max}
@@ -199,7 +222,9 @@ export function PlaygroundParameterPanel(props: PlaygroundParameterPanelProps) {
   const { t } = useTranslation()
   const isMobile = useIsMobile()
   const activeCount = PLAYGROUND_PARAMETER_CONTROLS.filter(
-    (control) => props.parameterEnabled[control.key]
+    (control) =>
+      props.customParametersEnabled !== false &&
+      props.parameterEnabled[control.key]
   ).length
 
   const trigger = (

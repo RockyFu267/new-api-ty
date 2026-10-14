@@ -1,4 +1,4 @@
-﻿{
+{
   "translation": {
     "360": "360",
     "1000": "1000",
@@ -5322,6 +5322,23 @@
     "Zero retention": "データ保持なし",
     "Zhipu": "Zhipu",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Enable custom parameters": "Enable custom parameters",
+    "When disabled, the provider uses its default parameters.": "When disabled, the provider uses its default parameters.",
+    "Department": "Department",
+    "Unassigned": "Unassigned",
+    "Department updated": "Department updated",
+    "Department for {{username}}": "Department for {{username}}",
+    "Manage departments": "Manage departments",
+    "Department saved": "Department saved",
+    "Department deleted": "Department deleted",
+    "Create flat departments and assign users from the users list.": "Create flat departments and assign users from the users list.",
+    "Department name": "Department name",
+    "No departments yet": "No departments yet",
+    "{{count}} users": "{{count}} users",
+    "Rename {{name}}": "Rename {{name}}",
+    "Delete {{name}}": "Delete {{name}}",
+    "Delete department": "Delete department",
+    "Delete {{name}}? Its {{count}} users will become unassigned. User accounts will be kept.": "Delete {{name}}? Its {{count}} users will become unassigned. User accounts will be kept."
   }
 }
