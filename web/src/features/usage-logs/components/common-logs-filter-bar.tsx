@@ -83,6 +83,7 @@ function buildSearchSourceKey(values: {
   channel?: unknown
   model?: unknown
   token?: unknown
+  billingSource?: unknown
   group?: unknown
   username?: unknown
   requestId?: unknown
@@ -95,6 +96,7 @@ function buildSearchSourceKey(values: {
     values.channel,
     values.model,
     values.token,
+    values.billingSource,
     values.group,
     values.username,
     values.requestId,
@@ -128,6 +130,7 @@ export function CommonLogsFilterBar<TData>(
       channel: searchParams.channel,
       model: searchParams.model,
       token: searchParams.token,
+      billingSource: searchParams.billingSource,
       group: searchParams.group,
       username: searchParams.username,
       requestId: searchParams.requestId,
@@ -142,6 +145,7 @@ export function CommonLogsFilterBar<TData>(
       channel: searchParams.channel || undefined,
       model: searchParams.model || undefined,
       token: searchParams.token || undefined,
+      billingSource: searchParams.billingSource || undefined,
       group: searchParams.group || undefined,
       username: searchParams.username || undefined,
       requestId: searchParams.requestId || undefined,
@@ -158,6 +162,7 @@ export function CommonLogsFilterBar<TData>(
     searchParams.channel,
     searchParams.model,
     searchParams.token,
+    searchParams.billingSource,
     searchParams.group,
     searchParams.username,
     searchParams.requestId,
@@ -242,7 +247,11 @@ export function CommonLogsFilterBar<TData>(
 
   const hasTypeFilter = logType !== LOG_TYPE_ALL_VALUE
   const hasAdditionalFilters =
-    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters
+    !!filters.billingSource ||
+    !!filters.model ||
+    !!filters.group ||
+    hasTypeFilter ||
+    hasExpandedFilters
 
   const expandedFilterCount = [
     filters.token,
@@ -362,6 +371,21 @@ export function CommonLogsFilterBar<TData>(
   )
   const advancedFilters = (
     <>
+      <LogsFilterField>
+        <select
+          className='bg-background rounded-md border px-2 py-1 text-sm'
+          aria-label={t('Billing source')}
+          value={filters.billingSource || ''}
+          onChange={(event) =>
+            handleChange('billingSource', event.target.value)
+          }
+        >
+          <option value=''>{t('All billing sources')}</option>
+          <option value='department_quota'>{t('Company quota')}</option>
+          <option value='wallet'>{t('Wallet')}</option>
+          <option value='subscription'>{t('Subscriptions')}</option>
+        </select>
+      </LogsFilterField>
       <LogsFilterField>
         <LogsFilterInput
           placeholder={t('Token Name')}

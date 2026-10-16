@@ -43,13 +43,14 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
   const { t } = useTranslation()
   const [mode, setMode] = useState<QuotaAdjustMode>('add')
   const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
 
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
 
-  const amountValue = parseFloat(amount) || 0
+  const amountValue = Number.parseFloat(amount) || 0
   const quotaValue = parseQuotaFromDollars(Math.abs(amountValue))
 
   const getPreviewText = () => {
@@ -78,6 +79,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
       const value =
         mode === 'override' ? parseQuotaFromDollars(amountValue) : quotaValue
       const result = await adjustUserQuota({
+        note,
         id: props.userId,
         action: 'add_quota',
         mode,
@@ -85,6 +87,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
       })
       if (result.success) {
         toast.success(t('Quota adjusted successfully'))
+        setNote('')
         setAmount('')
         setMode('add')
         props.onOpenChange(false)
@@ -100,6 +103,7 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
   }
 
   const handleCancel = () => {
+    setNote('')
     setAmount('')
     setMode('add')
     props.onOpenChange(false)
@@ -112,7 +116,10 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
   return (
     <Dialog
       open={props.open}
-      onOpenChange={props.onOpenChange}
+      onOpenChange={(open) => {
+        if (!open) setNote('')
+        props.onOpenChange(open)
+      }}
       title={t('Adjust Quota')}
       description={t('Select an operation mode and enter the amount')}
       contentHeight='auto'
@@ -130,6 +137,14 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
     >
       <div className='space-y-4'>
         <div className='text-muted-foreground text-sm'>{getPreviewText()}</div>
+        <label className='block space-y-1'>
+          <span>{t('Approval note (optional)')}</span>
+          <Input
+            maxLength={500}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+          />
+        </label>
 
         <div className='space-y-2'>
           <Label>{t('Mode')}</Label>
@@ -149,11 +164,9 @@ export function UserQuotaDialog(props: UserQuotaDialogProps) {
                   setAmount('')
                 }}
               >
-                {m === 'add'
-                  ? t('Add')
-                  : m === 'subtract'
-                    ? t('Subtract')
-                    : t('Override')}
+                {t(
+                  { add: 'Add', subtract: 'Subtract', override: 'Override' }[m]
+                )}
               </Button>
             ))}
           </div>

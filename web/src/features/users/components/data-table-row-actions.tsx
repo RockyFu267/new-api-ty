@@ -46,6 +46,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { UserQuotaDetails } from '@/features/company-quota/user-details'
 import { UserSubscriptionsDialog } from '@/features/subscriptions/components/dialogs/user-subscriptions-dialog'
 
 import { manageUser, resetUserPasskey, resetUserTwoFA } from '../api'
@@ -68,6 +69,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { t } = useTranslation()
   const user = row.original
   const { setOpen, setCurrentRow, triggerRefresh } = useUsers()
+  const [quotaDetailsOpen, setQuotaDetailsOpen] = useState(false)
   const [resetPasskeyOpen, setResetPasskeyOpen] = useState(false)
   const [resetTwoFAOpen, setResetTwoFAOpen] = useState(false)
   const [bindingDialogOpen, setBindingDialogOpen] = useState(false)
@@ -161,6 +163,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         ariaLabel={t('Open menu')}
         contentClassName='w-48'
       >
+        <DropdownMenuItem onClick={() => setQuotaDetailsOpen(true)}>
+          {t('View quota')}
+        </DropdownMenuItem>
+
         {isDisabled ? (
           <DropdownMenuItem onClick={() => handleManage('enable')}>
             {t('Enable')}
@@ -288,6 +294,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         handleConfirm={handleResetTwoFA}
       />
 
+      <UserQuotaDetails
+        open={quotaDetailsOpen}
+        onOpenChange={setQuotaDetailsOpen}
+        userId={user.id}
+        username={user.username}
+      />
       <UserBindingDialog
         open={bindingDialogOpen}
         onOpenChange={setBindingDialogOpen}

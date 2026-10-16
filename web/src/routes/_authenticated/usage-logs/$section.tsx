@@ -38,6 +38,7 @@ const usageLogsSearchSchema = z.object({
   pageSize: z.number().optional().catch(undefined),
   type: logTypeSearchSchema.optional(),
   filter: z.string().optional().catch(''),
+  billingSource: z.enum(['', 'department_quota', 'wallet', 'subscription']).optional().catch(''),
   model: z.string().optional().catch(''),
   token: z.string().optional().catch(''),
   channel: z.string().optional().catch(''),

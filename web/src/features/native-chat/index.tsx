@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
+import { loadCompanyData, type QuotaUsage } from '@/features/company-quota/api'
 import {
   buildKnowledgeTree,
   collectKnowledgeDocumentIds,
@@ -63,6 +64,7 @@ import {
   inferShowcaseDirective,
 } from '@/features/skill-showcase/directive'
 import { api } from '@/lib/api'
+import { formatQuota } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth-store'
 import { useChatParameterStore } from '@/stores/chat-parameter-store'
 
@@ -98,6 +100,12 @@ function ChannelChatSession(props: {
   const setCustomParametersEnabled = useChatParameterStore(
     (state) => state.setEnabled
   )
+  const budget = useQuery({
+    queryKey: ['company-quota-self'],
+    queryFn: () =>
+      loadCompanyData<{ enabled: boolean; usage: QuotaUsage }>('company-quota'),
+    refetchInterval: 30000,
+  })
   const [messages, setMessages] = useState<Message[]>([])
   const [config, setConfig] = useState<PlaygroundConfig>({
     ...DEFAULT_CONFIG,
@@ -126,8 +134,9 @@ function ChannelChatSession(props: {
   })
 
   useEffect(() => {
-    if (!skillQuery.isPending && !skillQuery.data)
-      {setShowcaseSkillEnabled(false)}
+    if (!skillQuery.isPending && !skillQuery.data) {
+      setShowcaseSkillEnabled(false)
+    }
   }, [skillQuery.data, skillQuery.isPending])
 
   const updateMessages = useCallback((updater: MessageStateUpdater) => {
@@ -166,8 +175,9 @@ function ChannelChatSession(props: {
       !message ||
       message.from !== 'assistant' ||
       (message.status !== 'complete' && !message.isContentComplete)
-    )
-      {return}
+    ) {
+      return
+    }
     const version = message.versions.at(-1)
     const executionKey = `${message.key}:${version?.id ?? ''}`
     if (!version || appliedSkillMessages.current.has(executionKey)) return
@@ -487,6 +497,13 @@ function ChannelChatSession(props: {
         </div>
       ) : null}
 
+      {budget.data?.enabled && (
+        <div className='text-muted-foreground border-b px-4 py-2 text-sm'>
+          {t('Company quota first; wallet fallback')} ? {t('Wallet balance')}:{' '}
+          {formatQuota(budget.data.usage.wallet)} ? {t('Department')}:{' '}
+          {budget.data.usage.department_name || t('Unassigned')}
+        </div>
+      )}
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <PlaygroundChat
           messages={messages}

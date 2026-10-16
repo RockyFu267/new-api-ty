@@ -48,6 +48,7 @@ export interface CommonFilters {
  * Common logs specific filters
  */
 export interface CommonLogFilters extends CommonFilters {
+  billingSource?: string
   model?: string
   token?: string
   group?: string
@@ -312,6 +313,7 @@ export interface TaskLog {
 // ============================================================================
 
 export interface GetLogsParams {
+  billing_source?: string
   p?: number
   page_size?: number
   type?: number
@@ -338,6 +340,7 @@ export interface GetLogsResponse {
 }
 
 export interface GetLogStatsParams {
+  billing_source?: string
   type?: number
   username?: string
   token_name?: string

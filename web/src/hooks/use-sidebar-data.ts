@@ -109,7 +109,7 @@ export function useSidebarData(): SidebarData {
             icon: BookUser,
           },
           {
-            title: t('Wallet'),
+            title: t('Quota and wallet'),
             url: '/wallet',
             icon: Wallet,
           },
@@ -138,6 +138,18 @@ export function useSidebarData(): SidebarData {
             title: t('Users'),
             url: '/users',
             icon: Users,
+          },
+          {
+            title: t('Department quotas'),
+            url: '/department-quotas',
+            requiredRole: ROLE.ADMIN,
+            icon: Users,
+          },
+          {
+            title: t('Wallet adjustments'),
+            url: '/wallet-adjustments',
+            requiredRole: ROLE.ADMIN,
+            icon: Wallet,
           },
           {
             title: t('Subscriptions'),

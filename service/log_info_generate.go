@@ -159,6 +159,8 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 	// billing_source: "wallet" or "subscription"
 	if relayInfo.BillingSource != "" {
 		other["billing_source"] = relayInfo.BillingSource
+		other["department_id"] = relayInfo.BillingDepartmentId
+		other["department_name"] = relayInfo.BillingDepartmentName
 	}
 	if relayInfo.UserSetting.BillingPreference != "" {
 		other["billing_preference"] = relayInfo.UserSetting.BillingPreference

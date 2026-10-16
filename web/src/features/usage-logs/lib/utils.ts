@@ -94,20 +94,7 @@ function timestampToSeconds(ms: number): number {
 /**
  * Build query parameters from filters
  */
-export function buildQueryParams(
-  params: Record<string, unknown>
-): URLSearchParams {
-  const queryParams = new URLSearchParams()
-
-  Object.entries(params).forEach(([key, value]) => {
-    // Keep 0 as a valid value, only filter out undefined, null, and empty string
-    if (value !== undefined && value !== null && value !== '') {
-      queryParams.append(key, String(value))
-    }
-  })
-
-  return queryParams
-}
+export { buildQueryParams } from './query-params'
 
 /**
  * Build time range parameters with default values
@@ -156,6 +143,9 @@ export function buildBaseParams(config: {
   const { page, pageSize, searchParams, useMilliseconds = false } = config
 
   return {
+    ...(searchParams.billingSource
+      ? { billing_source: String(searchParams.billingSource) }
+      : {}),
     p: page,
     page_size: pageSize,
     ...(searchParams.channel
@@ -197,6 +187,9 @@ export function buildApiParams(config: {
 
   // Build base params from search params
   const params: GetLogsParams = {
+    ...(searchParams.billingSource
+      ? { billing_source: String(searchParams.billingSource) }
+      : {}),
     p: page,
     page_size: pageSize,
     ...(searchParams.type ? { type: processType(searchParams.type) } : {}),

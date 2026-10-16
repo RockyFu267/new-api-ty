@@ -145,6 +145,7 @@ export type ManageUserAction =
 export type QuotaAdjustMode = 'add' | 'subtract' | 'override'
 
 export interface ManageUserQuotaPayload {
+  note?: string
   id: number
   action: 'add_quota'
   mode: QuotaAdjustMode

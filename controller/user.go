@@ -1106,6 +1106,7 @@ func updateAdminPermissionsForUserInTx(c *gin.Context, tx *gorm.DB, userID int, 
 }
 
 type ManageRequest struct {
+	Note   string `json:"note"`
 	Id     int    `json:"id"`
 	Action string `json:"action"`
 	Value  int    `json:"value"`
@@ -1133,6 +1134,24 @@ func ManageUser(c *gin.Context) {
 	myRole := c.GetInt("role")
 	if !canManageTargetRole(myRole, user.Role) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionHigherLevel)
+		return
+	}
+	if len([]rune(req.Note)) > 500 {
+		common.ApiError(c, fmt.Errorf("note exceeds 500 characters"))
+		return
+	}
+	if req.Action == "add_quota" && operation_setting.GetQuotaSetting().EnterpriseQuotaEnabled {
+		before, after, err := model.AdjustWalletWithReceipt(user.Id, req.Mode, req.Value)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		users := []*model.User{&user}
+		if err := model.EnrichUsersWithDepartment(users); err != nil {
+			common.SysError(err.Error())
+		}
+		recordManageAuditFor(c, user.Id, "user.quota_"+req.Mode, map[string]interface{}{"target_user_id": user.Id, "target_username": user.Username, "department_id": user.DepartmentId, "department_name": user.DepartmentName, "before": before, "after": after, "value": req.Value, "note": req.Note, "quota": logger.LogQuota(req.Value), "from": logger.LogQuota(before), "to": logger.LogQuota(after)})
+		common.ApiSuccess(c, nil)
 		return
 	}
 	switch req.Action {
@@ -1207,7 +1226,10 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			recordManageAuditFor(c, user.Id, "user.quota_add", map[string]interface{}{
-				"quota": logger.LogQuota(req.Value),
+				"quota":           logger.LogQuota(req.Value),
+				"note":            req.Note,
+				"target_user_id":  user.Id,
+				"target_username": user.Username,
 			})
 		case "subtract":
 			if req.Value <= 0 {
@@ -1219,7 +1241,10 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			recordManageAuditFor(c, user.Id, "user.quota_subtract", map[string]interface{}{
-				"quota": logger.LogQuota(req.Value),
+				"quota":           logger.LogQuota(req.Value),
+				"note":            req.Note,
+				"target_user_id":  user.Id,
+				"target_username": user.Username,
 			})
 		case "override":
 			if err := common.ValidateWalletQuota(req.Value); err != nil {
@@ -1232,8 +1257,11 @@ func ManageUser(c *gin.Context) {
 				return
 			}
 			recordManageAuditFor(c, user.Id, "user.quota_override", map[string]interface{}{
-				"from": logger.LogQuota(oldQuota),
-				"to":   logger.LogQuota(req.Value),
+				"note":            req.Note,
+				"target_user_id":  user.Id,
+				"target_username": user.Username,
+				"from":            logger.LogQuota(oldQuota),
+				"to":              logger.LogQuota(req.Value),
 			})
 		default:
 			common.ApiErrorI18n(c, i18n.MsgInvalidParams)

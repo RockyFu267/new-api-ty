@@ -287,6 +287,19 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
   const { t } = useTranslation()
   const columns: ColumnDef<UsageLog>[] = [
     {
+      id: 'billing_source',
+      header: t('Billing source'),
+      enableSorting: false,
+      size: 130,
+      cell: ({ row }) => {
+        if (row.original.type !== 2) return '-'
+        const source = parseLogOther(row.original.other)?.billing_source
+        if (source === 'department_quota') return t('Company quota')
+        if (source === 'subscription') return t('Subscriptions')
+        return t('Wallet')
+      },
+    },
+    {
       accessorKey: 'created_at',
       header: t('Time'),
       cell: ({ row }) => {

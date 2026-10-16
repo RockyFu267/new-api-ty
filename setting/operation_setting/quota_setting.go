@@ -3,6 +3,7 @@ package operation_setting
 import "github.com/QuantumNous/new-api/setting/config"
 
 type QuotaSetting struct {
+	EnterpriseQuotaEnabled    bool `json:"enterprise_quota_enabled"`
 	EnableFreeModelPreConsume bool `json:"enable_free_model_pre_consume"` // 是否对免费模型启用预消耗
 }
 

@@ -1,3 +1,7 @@
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+
+import { SectionPageLayout } from '@/components/layout'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -16,10 +20,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-
-import { SectionPageLayout } from '@/components/layout'
+import { CompanyWallet } from '@/features/company-quota/wallet'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { getSelf } from '@/lib/api'
@@ -59,7 +60,11 @@ interface WalletProps {
   initialShowHistory?: boolean
 }
 
-export function Wallet(props: WalletProps) {
+export function Wallet(_props: WalletProps) {
+  return <CompanyWallet />
+}
+
+export function LegacyWallet(props: WalletProps) {
   const { t } = useTranslation()
   const [user, setUser] = useState<UserWalletData | null>(null)
   const [userLoading, setUserLoading] = useState(true)
