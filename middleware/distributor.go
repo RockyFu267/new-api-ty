@@ -39,6 +39,12 @@ func Distribute() func(c *gin.Context) {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorInvalidRequest, map[string]any{"Error": err.Error()}))
 			return
 		}
+		if shouldSelectChannel {
+			if err := service.CheckDepartmentModelAccess(c, modelRequest.Model); err != nil {
+				abortWithOpenAiMessage(c, http.StatusForbidden, err.Error(), "department_model_forbidden")
+				return
+			}
+		}
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {
@@ -217,6 +223,23 @@ func getModelFromJSONBody(c *gin.Context) (*ModelRequest, error) {
 	}
 	if !gjson.ValidBytes(requestBody) {
 		return nil, errors.New("invalid JSON request body")
+	}
+	// Routing and downstream DTO decoding must not disagree on repeated model keys.
+	seen := map[string]bool{}
+	duplicate := false
+	gjson.ParseBytes(requestBody).ForEach(func(key, value gjson.Result) bool {
+		name := strings.ToLower(key.String())
+		if name == "model" || name == "group" {
+			if seen[name] {
+				duplicate = true
+				return false
+			}
+			seen[name] = true
+		}
+		return true
+	})
+	if duplicate {
+		return nil, errors.New("duplicate model or group field")
 	}
 
 	values := gjson.GetManyBytes(requestBody, "model", "group")

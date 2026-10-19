@@ -28,6 +28,7 @@ import {
   type QuotaUsage,
 } from './api'
 import { CompanyBills } from './bills'
+import { DepartmentModelPermissions } from './model-permissions'
 import { QuotaUsageCard } from './usage'
 
 export function CompanyQuota() {
@@ -107,7 +108,7 @@ export function CompanyQuota() {
   }
   return (
     <div className='space-y-5 p-6'>
-      <h1 className='text-2xl font-semibold'>{t('Department quotas')}</h1>
+      <h1 className='text-2xl font-semibold'>{t('Department policies')}</h1>
       <div className='flex items-center gap-3 rounded-lg border p-4'>
         <Switch
           aria-label={t('Enable enterprise quota mode')}
@@ -130,16 +131,23 @@ export function CompanyQuota() {
         )}
       </p>
       <div className='flex gap-2'>
-        {['rules', 'users'].map((value) => (
+        {['rules', 'models', 'users'].map((value) => (
           <Button
             key={value}
             variant={tab === value ? 'default' : 'outline'}
             onClick={() => setTab(value)}
           >
-            {value === 'rules' ? t('Department rules') : t('User usage')}
+            {t(
+              {
+                rules: 'Department rules',
+                models: 'Model permissions',
+                users: 'User usage',
+              }[value] ?? value
+            )}
           </Button>
         ))}
       </div>
+      {tab === 'models' && <DepartmentModelPermissions />}
       {config.isError && (
         <Button onClick={() => void config.refetch()}>{t('Retry')}</Button>
       )}

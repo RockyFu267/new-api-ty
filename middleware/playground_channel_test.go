@@ -29,7 +29,13 @@ func TestSelectPlaygroundChannelLocksAuthorizedChannel(t *testing.T) {
 	model.DB = db
 	common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
 	common.MemoryCacheEnabled = false
-	require.NoError(t, db.AutoMigrate(&model.Channel{}, &model.Ability{}))
+	require.NoError(t, db.AutoMigrate(&model.Channel{}, &model.Ability{}, &model.User{}, &model.Department{}, &model.UserDepartment{}, &model.DepartmentModelPolicy{}))
+	require.NoError(t, db.Create(&model.User{Id: 1, Username: "playground", AffCode: "playground"}).Error)
+	department, err := model.SaveDepartment(0, "Playground")
+	require.NoError(t, err)
+	require.NoError(t, model.AssignUserDepartment(1, department.Id))
+	_, err = model.SaveDepartmentModels(department.Id, []string{"qwen-local"})
+	require.NoError(t, err)
 	require.NoError(t, db.Create(&model.Channel{
 		Id: 401, Name: "Local Qwen", Type: 33, Status: common.ChannelStatusEnabled, Key: "secret", Group: "default", Models: "qwen-local",
 	}).Error)
@@ -40,6 +46,7 @@ func TestSelectPlaygroundChannelLocksAuthorizedChannel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.POST("/pg/chat/completions", func(c *gin.Context) {
+		c.Set("id", 1)
 		common.SetContextKey(c, constant.ContextKeyUserGroup, "default")
 		c.Next()
 	}, SelectPlaygroundChannel(), func(c *gin.Context) {

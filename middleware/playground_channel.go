@@ -20,6 +20,10 @@ func SelectPlaygroundChannel() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error(), "type": "invalid_request_error"}})
 			return
 		}
+		if err := service.CheckDepartmentModelAccess(c, request.Model); err != nil {
+			abortWithOpenAiMessage(c, http.StatusForbidden, err.Error(), "department_model_forbidden")
+			return
+		}
 		if request.ChannelId == 0 {
 			c.Next()
 			return

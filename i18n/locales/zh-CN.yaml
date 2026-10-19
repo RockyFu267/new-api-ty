@@ -262,6 +262,9 @@ common.uuid_duplicate: "请重试，系统生成的 UUID 竟然重复了！"
 common.invalid_input: "输入不合法"
 
 # Distributor messages
+department_models.unavailable: "无法读取部门模型权限，请联系管理员。"
+department_models.no_department: "未分配部门，无法使用模型，请联系管理员。"
+department_models.forbidden: "所在部门未授权使用模型 {{.Model}}，请联系管理员。"
 distributor.invalid_request: "无效的请求，{{.Error}}"
 distributor.invalid_channel_id: "无效的渠道 Id"
 distributor.channel_disabled: "该渠道已被禁用"

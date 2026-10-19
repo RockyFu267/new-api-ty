@@ -32,6 +32,18 @@ func GetUserChannelModels(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	access, err := model.GetUserDepartmentModelAccess(c.GetInt("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	filtered := make([]model.UserChannelModel, 0, len(items))
+	for _, item := range items {
+		if access.Allows(item.Model) {
+			filtered = append(filtered, item)
+		}
+	}
+	items = filtered
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

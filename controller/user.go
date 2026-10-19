@@ -686,11 +686,12 @@ func GetUserModels(c *gin.Context) {
 			groupsToQuery = []string{group}
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    service.GetGroupsEnabledModels(groupsToQuery),
-	})
+	models, err := model.FilterDepartmentModelNames(id, service.GetGroupsEnabledModels(groupsToQuery))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": models})
 }
 
 func UpdateUser(c *gin.Context) {

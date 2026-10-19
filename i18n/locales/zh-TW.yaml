@@ -262,6 +262,9 @@ common.uuid_duplicate: "請重試，系統生成的 UUID 竟然重複了！"
 common.invalid_input: "輸入不合法"
 
 # Distributor messages
+department_models.unavailable: "無法讀取部門模型權限，請聯絡管理員。"
+department_models.no_department: "未分配部門，無法使用模型，請聯絡管理員。"
+department_models.forbidden: "所在部門未授權使用模型 {{.Model}}，請聯絡管理員。"
 distributor.invalid_request: "無效的請求，{{.Error}}"
 distributor.invalid_channel_id: "無效的管道 Id"
 distributor.channel_disabled: "該管道已被禁用"

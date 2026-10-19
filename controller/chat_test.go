@@ -50,6 +50,7 @@ func TestGetUserChannelModelsReturnsEnabledAuthorizedChannelModels(t *testing.T)
 	context.Request = httptest.NewRequest(http.MethodGet, "/api/user/chat/channel-models", nil)
 	context.Set("id", 2201)
 
+	authorizeControllerDepartmentModels(t, context)
 	GetUserChannelModels(context)
 
 	require.Equal(t, http.StatusOK, recorder.Code)

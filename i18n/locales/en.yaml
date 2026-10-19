@@ -261,6 +261,9 @@ common.uuid_duplicate: "Please retry, the system generated a duplicate UUID!"
 common.invalid_input: "Invalid input"
 
 # Distributor messages
+department_models.unavailable: "Unable to read department model permissions. Please contact an administrator."
+department_models.no_department: "No department assigned. Model access is denied. Please contact an administrator."
+department_models.forbidden: "Your department has not authorized model {{.Model}}. Please contact an administrator."
 distributor.invalid_request: "Invalid request: {{.Error}}"
 distributor.invalid_channel_id: "Invalid channel ID"
 distributor.channel_disabled: "This channel has been disabled"

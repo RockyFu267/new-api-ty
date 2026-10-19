@@ -560,6 +560,7 @@ export function NativeChat() {
   const channelModelsQuery = useQuery({
     queryKey: ['native-chat-channel-models'],
     queryFn: getChannelModels,
+    refetchInterval: 30000,
   })
 
   if (selected) {
@@ -615,6 +616,11 @@ export function NativeChat() {
             <Bot className='text-muted-foreground mx-auto size-10' />
             <p className='mt-4 font-medium'>
               {t('No channel models available')}
+            </p>
+            <p className='text-muted-foreground mt-2 text-sm'>
+              {t(
+                'Ask an administrator to check your department model permissions and available channels.'
+              )}
             </p>
           </div>
         ) : (

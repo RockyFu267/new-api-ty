@@ -166,6 +166,9 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (*TaskSubmitRe
 	}
 
 	// 2.5 应用渠道的模型映射（与同步任务对齐）
+	if err := service.CheckDepartmentModelAccess(c, modelName); err != nil {
+		return nil, service.TaskErrorWrapperLocal(err, "department_model_forbidden", http.StatusForbidden)
+	}
 	info.OriginModelName = modelName
 	info.UpstreamModelName = modelName
 	if err := helper.ModelMappedHelper(c, info, nil); err != nil {

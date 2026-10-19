@@ -10,6 +10,8 @@
 
 ## 当前文档
 
+- `department-models/README.md`：部门模型授权、默认禁止规则与部门策略入口。
+
 - `usage-analysis/README.md`：管理员独立用量分析、部门/人员/模型统计与本地模型商业采购支出估算。
 
 - `quota/README.md`：企业部门周期配额、钱包兜底、账单及余额调整审计。

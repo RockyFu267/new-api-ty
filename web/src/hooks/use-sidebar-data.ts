@@ -140,7 +140,7 @@ export function useSidebarData(): SidebarData {
             icon: Users,
           },
           {
-            title: t('Department quotas'),
+            title: t('Department policies'),
             url: '/department-quotas',
             requiredRole: ROLE.ADMIN,
             icon: Users,

@@ -49,7 +49,7 @@ func setupModelListControllerTestDB(t *testing.T) *gorm.DB {
 	model.DB = db
 	model.LOG_DB = db
 
-	require.NoError(t, db.AutoMigrate(&model.User{}, &model.Channel{}, &model.Ability{}, &model.Model{}, &model.Vendor{}, &model.ChatPrompt{}, &model.KnowledgeDocument{}))
+	require.NoError(t, db.AutoMigrate(&model.Department{}, &model.UserDepartment{}, &model.DepartmentModelPolicy{}, &model.User{}, &model.Channel{}, &model.Ability{}, &model.Model{}, &model.Vendor{}, &model.ChatPrompt{}, &model.KnowledgeDocument{}))
 
 	t.Cleanup(func() {
 		sqlDB, err := db.DB()
@@ -200,6 +200,7 @@ func TestGetUserModelsFiltersByRequestedGroup(t *testing.T) {
 	defaultContext.Request = httptest.NewRequest(http.MethodGet, "/api/user/models?group=default", nil)
 	defaultContext.Set("id", 1002)
 
+	authorizeControllerDepartmentModels(t, defaultContext)
 	GetUserModels(defaultContext)
 
 	defaultModels := decodeUserModelsResponse(t, defaultRecorder)
@@ -257,6 +258,7 @@ func TestGetUserModelsExpandsAutoGroupsInConfiguredOrder(t *testing.T) {
 	context.Request = httptest.NewRequest(http.MethodGet, "/api/user/models?group=auto", nil)
 	context.Set("id", 1003)
 
+	authorizeControllerDepartmentModels(t, context)
 	GetUserModels(context)
 
 	models := decodeUserModelsResponse(t, recorder)
@@ -296,6 +298,7 @@ func TestListModelsIncludesTieredBillingModel(t *testing.T) {
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	ctx.Set("id", 1001)
 
+	authorizeControllerDepartmentModels(t, ctx)
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 
 	ids := decodeListModelsResponse(t, recorder)
@@ -381,6 +384,7 @@ func TestListModelsUsesAdvancedCustomEndpointTypesFromPricingCache(t *testing.T)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
 	ctx.Set("id", 1003)
 
+	authorizeControllerDepartmentModels(t, ctx)
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 
 	payload := decodeListModelsPayload(t, recorder)
@@ -422,6 +426,7 @@ func TestListModelsTokenLimitIncludesTieredBillingModel(t *testing.T) {
 		"zz-token-unpriced-model":            true,
 	})
 
+	authorizeControllerDepartmentModels(t, ctx)
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 
 	ids := decodeListModelsResponse(t, recorder)
@@ -465,6 +470,7 @@ func TestListModelsTokenLimitUsesResolvedCustomAutoGroups(t *testing.T) {
 		"zz-not-enabled":              true,
 	})
 
+	authorizeControllerDepartmentModels(t, ctx)
 	ListModels(ctx, constant.ChannelTypeOpenAI)
 	ids := decodeListModelsResponse(t, recorder)
 	require.Equal(t, map[string]struct{}{"zz-vip-allowed": {}}, ids)

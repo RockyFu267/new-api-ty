@@ -240,6 +240,11 @@ func ListModels(c *gin.Context, modelType int) {
 		}
 	}
 	models := service.GetGroupsEnabledModels(ownerGroups)
+	models, err = model.FilterDepartmentModelNames(c.GetInt("id"), models)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	for _, modelName := range models {
 		if modelLimitEnable {
 			matchingName := ratio_setting.FormatMatchingModelName(modelName)
@@ -329,6 +334,15 @@ func EnabledListModels(c *gin.Context) {
 
 func RetrieveModel(c *gin.Context, modelType int) {
 	modelId := c.Param("model")
+	access, err := model.GetUserDepartmentModelAccess(c.GetInt("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if !access.Allows(modelId) {
+		c.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "Model is not authorized for your department", "type": "permission_error", "code": "department_model_forbidden"}})
+		return
+	}
 	if aiModel, ok := openAIModelsMap[modelId]; ok {
 		switch modelType {
 		case constant.ChannelTypeAnthropic:

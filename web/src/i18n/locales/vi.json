@@ -5463,6 +5463,21 @@
     "Search and select a model": "Search and select a model",
     "Unable to load filter options": "Unable to load filter options",
     "Search usage": "Search usage",
-    "Choose filters, then click Search.": "Choose filters, then click Search."
+    "Choose filters, then click Search.": "Choose filters, then click Search.",
+    "Department policies": "Department policies",
+    "Model permissions": "Model permissions",
+    "Only selected models are allowed. Saving an empty list denies every model. Administrators follow the same policy.": "Only selected models are allowed. Saving an empty list denies every model. Administrators follow the same policy.",
+    "Select search results": "Select search results",
+    "Clear all models": "Clear all models",
+    "Authorized models": "Authorized models",
+    "Not currently configured in channels": "Not currently configured in channels",
+    "No matching models": "No matching models",
+    "This department will be unable to call any model.": "This department will be unable to call any model.",
+    "Unable to save model permissions": "Unable to save model permissions",
+    "Save model permissions": "Save model permissions",
+    "All models denied": "All models denied",
+    "Configure model permissions": "Configure model permissions",
+    "Users without a department, or departments without authorized models, cannot call models. Wallet funds, administrator roles and API keys do not bypass this policy. Quota billing switches do not disable model permissions.": "Users without a department, or departments without authorized models, cannot call models. Wallet funds, administrator roles and API keys do not bypass this policy. Quota billing switches do not disable model permissions.",
+    "Ask an administrator to check your department model permissions and available channels.": "Ask an administrator to check your department model permissions and available channels."
   }
 }

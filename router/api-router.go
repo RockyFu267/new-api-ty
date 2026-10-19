@@ -149,6 +149,8 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.GET("/company-quota/config", controller.DepartmentQuotaConfig)
 				adminRoute.PUT("/company-quota/config", controller.DepartmentQuotaConfig)
 				adminRoute.GET("/company-quota/rules", controller.DepartmentQuotaRules)
+				adminRoute.GET("/company-quota/models", controller.DepartmentModels)
+				adminRoute.PUT("/company-quota/models", controller.DepartmentModels)
 				adminRoute.PUT("/company-quota/rules", controller.DepartmentQuotaRules)
 				adminRoute.GET("/company-quota/users", controller.DepartmentQuotaUsers)
 				adminRoute.GET("/company-quota/users/:id", controller.AdminDepartmentQuota)

@@ -29,16 +29,15 @@ function renderNativeChat() {
 
 describe('NativeChat channel model selection', () => {
   beforeEach(() => {
-    vi.mocked(api.get).mockImplementation(async (url) => ({
-      data: {
-        success: true,
-        data: url === '/api/user/chat/knowledge-documents' ? [{
+    const responses: Record<string, unknown> = {
+        '/api/user/chat/knowledge-documents': [{
           id: 11,
           relative_path: 'k8s/k8s-clusters.md',
           name: 'k8s-clusters.md',
           allow_download: false,
           size: 1024,
-        }] : [
+        }],
+        '/api/user/chat/channel-models': [
           {
             channel_id: 301,
             channel_name: 'Local Qwen',
@@ -58,7 +57,11 @@ describe('NativeChat channel model selection', () => {
             prompt_description: '使用会产生费用。',
           },
         ],
-      },
+        '/api/user/private-knowledge/documents': { documents: [], directories: [] },
+        '/api/user/company-quota': { enabled: false },
+    }
+    vi.mocked(api.get).mockImplementation(async (url) => ({
+      data: { success: true, data: responses[String(url)] ?? null },
     } as never))
   })
 

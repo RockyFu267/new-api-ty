@@ -72,6 +72,9 @@ func DeleteDepartment(id int) error {
 		if err := tx.Where("department_id = ?", id).Delete(&UserDepartment{}).Error; err != nil {
 			return err
 		}
+		if err := tx.Where("department_id = ?", id).Delete(&DepartmentModelPolicy{}).Error; err != nil {
+			return err
+		}
 		return tx.Delete(&department).Error
 	})
 }

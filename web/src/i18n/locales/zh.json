@@ -5463,6 +5463,21 @@
     "Search and select a model": "搜索并选择模型",
     "Unable to load filter options": "无法加载筛选选项",
     "Search usage": "查询",
-    "Choose filters, then click Search.": "选择条件后点击“查询”生效。"
+    "Choose filters, then click Search.": "选择条件后点击“查询”生效。",
+    "Department policies": "部门策略",
+    "Model permissions": "模型权限",
+    "Only selected models are allowed. Saving an empty list denies every model. Administrators follow the same policy.": "仅允许调用勾选的模型。保存空清单会禁止全部模型，管理员同样遵守此规则。",
+    "Select search results": "勾选搜索结果",
+    "Clear all models": "清空模型授权",
+    "Authorized models": "已授权模型",
+    "Not currently configured in channels": "当前渠道未配置",
+    "No matching models": "没有匹配的模型",
+    "This department will be unable to call any model.": "该部门将无法调用任何模型。",
+    "Unable to save model permissions": "无法保存模型权限",
+    "Save model permissions": "保存模型权限",
+    "All models denied": "全部模型禁止使用",
+    "Configure model permissions": "配置模型权限",
+    "Users without a department, or departments without authorized models, cannot call models. Wallet funds, administrator roles and API keys do not bypass this policy. Quota billing switches do not disable model permissions.": "没有部门，或部门未授权模型时，均不能调用模型。钱包余额、管理员身份、API Key 都不能绕过权限；关闭企业配额模式也不会关闭模型权限限制。",
+    "Ask an administrator to check your department model permissions and available channels.": "请联系管理员确认所属部门的模型授权及可用渠道。"
   }
 }
