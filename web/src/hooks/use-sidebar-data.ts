@@ -146,6 +146,12 @@ export function useSidebarData(): SidebarData {
             icon: Users,
           },
           {
+            title: t('Usage analysis'),
+            url: '/usage-analysis',
+            requiredRole: ROLE.ADMIN,
+            icon: Activity,
+          },
+          {
             title: t('Wallet adjustments'),
             url: '/wallet-adjustments',
             requiredRole: ROLE.ADMIN,

@@ -113,6 +113,7 @@ func main() {
 
 	// 数据看板
 	go model.UpdateQuotaData()
+	go model.RunUsageAnalysis()
 
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))
@@ -330,6 +331,9 @@ func InitResources() error {
 	// Initialize SQL Database
 	err = model.InitLogDB()
 	if err != nil {
+		return err
+	}
+	if err = model.InitUsageAnalysis(); err != nil {
 		return err
 	}
 

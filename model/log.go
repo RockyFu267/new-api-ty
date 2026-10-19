@@ -341,6 +341,16 @@ type RecordConsumeLogParams struct {
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
+	if params.Other == nil {
+		params.Other = map[string]interface{}{}
+	}
+	if id, ok := c.Get("usage_department_id"); ok {
+		params.Other["analysis_department_id"] = id
+		params.Other["analysis_department"] = c.GetString("usage_department")
+	}
+	if err := QueueUsageAnalysis(c, userId, params); err != nil {
+		logger.LogError(c, "failed to persist usage analysis: "+err.Error())
+	}
 	if !common.LogConsumeEnabled {
 		return
 	}
@@ -726,6 +736,16 @@ func CountOldLog(ctx context.Context, targetTimestamp int64) (int64, error) {
 }
 
 func DeleteOldLogBatch(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	// Don't allow cleanup to erase retained history before its initial import.
+	if DB.Migrator().HasTable(&UsageAnalysisState{}) {
+		var state UsageAnalysisState
+		if err := DB.First(&state, 1).Error; err != nil {
+			return 0, err
+		}
+		if state.Imported < state.ImportThrough {
+			return 0, fmt.Errorf("usage analysis history import is still in progress; retry cleanup later")
+		}
+	}
 	if limit <= 0 {
 		limit = 100
 	}

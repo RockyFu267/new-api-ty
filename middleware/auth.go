@@ -196,6 +196,7 @@ func setDashboardAuthContext(c *gin.Context, user *model.UserBase, identity serv
 	c.Set("username", user.Username)
 	c.Set("role", user.Role)
 	c.Set("id", user.Id)
+	model.CaptureUsageDepartment(c, user.Id)
 	c.Set("group", user.Group)
 	c.Set("user_group", user.Group)
 	c.Set("use_access_token", useAccessToken)
@@ -479,6 +480,7 @@ func TokenAuth() func(c *gin.Context) {
 		if err != nil {
 			return
 		}
+		model.CaptureUsageDepartment(c, token.UserId)
 		c.Next()
 	}
 }

@@ -522,6 +522,17 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	}
 
 	attachQuotaSaturation(ctx, relayInfo, other)
+	// Independent reporting uses normalized input, never the discounted billing quantity.
+	analysisInput := summary.PromptTokens
+	if summary.IsClaudeUsageSemantic {
+		analysisInput += summary.CacheTokens + cacheWriteTokens
+	}
+	if total, ok := other["input_tokens_total"].(int); ok {
+		analysisInput = total
+	}
+	other["analysis_input_total"] = analysisInput
+	other["analysis_estimated"] = originUsage == nil || common.GetContextKeyBool(ctx, constant.ContextKeyLocalCountTokens)
+	other["analysis_cache_reported"] = summary.CacheTokens > 0 || cacheWriteTokens > 0
 
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
