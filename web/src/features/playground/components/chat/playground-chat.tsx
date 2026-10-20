@@ -138,6 +138,32 @@ export function PlaygroundChat({
         key={message.key}
       >
         <div className='w-full min-w-0 flex-1 basis-full'>
+          {message.files?.length ? (
+            <ul
+              className='mb-2 flex flex-wrap gap-2'
+              aria-label={t('Temporary attachments')}
+            >
+              {[...new Set(message.files.map((file) => file.name))].map(
+                (name) => (
+                  <li
+                    key={name}
+                    className='max-w-full truncate rounded border px-3 py-1 text-sm'
+                    title={name}
+                  >
+                    {name}
+                  </li>
+                )
+              )}
+            </ul>
+          ) : null}
+          {[...new Set(message.images ?? [])].map((image) => (
+            <img
+              key={image}
+              src={image}
+              alt={t('Attached image')}
+              className='mb-2 max-h-64 max-w-full rounded object-contain'
+            />
+          ))}
           {isEditing ? (
             <PlaygroundMessageEditor
               editText={editText}

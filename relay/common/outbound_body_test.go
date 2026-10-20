@@ -2,12 +2,36 @@ package common
 
 import (
 	"io"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestTransientChatOutboundBodyNeverUsesDisk(t *testing.T) {
+	previous := common.GetDiskCacheConfig()
+	t.Cleanup(func() { common.SetDiskCacheConfig(previous) })
+	common.SetDiskCacheConfig(common.DiskCacheConfig{Enabled: true, ThresholdMB: 1, MaxSizeMB: 100, Path: t.TempDir()})
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest("POST", "/pg/chat/completions", nil)
+	payload := []byte(strings.Repeat("private attachment", 100000))
+	body, closer, err := NewOutboundJSONBody(payload, c)
+	require.NoError(t, err)
+	defer closer.Close()
+	storage, ok := closer.(common.BodyStorage)
+	require.True(t, ok)
+	require.False(t, storage.IsDisk())
+	replay, err := body.NewReader()
+	require.NoError(t, err)
+	defer replay.Close()
+	data, err := io.ReadAll(replay)
+	require.NoError(t, err)
+	require.Equal(t, payload, data)
+}
 
 func TestNewOutboundJSONBody_GetBodyReplaysFullBody(t *testing.T) {
 	t.Parallel()

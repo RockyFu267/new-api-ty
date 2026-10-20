@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -39,21 +38,6 @@ func uploadDifyFile(c *gin.Context, info *relaycommon.RelayInfo, user string, me
 		decodedData, err := base64.StdEncoding.DecodeString(base64Data)
 		if err != nil {
 			common.SysLog("failed to decode base64: " + err.Error())
-			return nil
-		}
-
-		// Create temporary file
-		tempFile, err := os.CreateTemp("", "dify-upload-*")
-		if err != nil {
-			common.SysLog("failed to create temp file: " + err.Error())
-			return nil
-		}
-		defer tempFile.Close()
-		defer os.Remove(tempFile.Name())
-
-		// Write decoded data to temp file
-		if _, err := tempFile.Write(decodedData); err != nil {
-			common.SysLog("failed to write to temp file: " + err.Error())
 			return nil
 		}
 

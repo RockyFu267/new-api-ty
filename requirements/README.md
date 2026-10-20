@@ -10,6 +10,8 @@
 
 ## 当前文档
 
+- `chat-attachments/README.md`：聊天知识库和 Skill 收起、临时文本与图片附件、剪贴板截图及禁止落盘。
+
 - `department-models/README.md`：部门模型授权、默认禁止规则与部门策略入口。
 
 - `usage-analysis/README.md`：管理员独立用量分析、部门/人员/模型统计与本地模型商业采购支出估算。

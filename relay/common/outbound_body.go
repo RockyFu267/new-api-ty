@@ -4,10 +4,12 @@ import (
 	"io"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/gin-gonic/gin"
 )
 
 // NewOutboundJSONBody wraps the already-marshaled upstream request body into a
-// BodyStorage. When disk cache is enabled and the payload exceeds the configured
+// BodyStorage. Playground requests always stay in memory. Otherwise, when disk
+// cache is enabled and the payload exceeds the configured
 // threshold, the data is written to a temp file and the original []byte can be
 // GC'd, significantly reducing the heap residency while waiting for the
 // upstream provider to respond (the dominant cost for large base64 payloads).
@@ -22,8 +24,13 @@ import (
 // io.Closer. Request construction uses that metadata to populate ContentLength
 // and GetBody, while the caller retains ownership of the underlying storage
 // through the separately returned closer.
-func NewOutboundJSONBody(data []byte) (body common.ReplayableBody, closer io.Closer, err error) {
-	storage, err := common.CreateBodyStorage(data)
+func NewOutboundJSONBody(data []byte, contexts ...*gin.Context) (body common.ReplayableBody, closer io.Closer, err error) {
+	var storage common.BodyStorage
+	if len(contexts) > 0 {
+		storage, err = common.CreateRequestBodyStorage(contexts[0], data)
+	} else {
+		storage, err = common.CreateBodyStorage(data)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

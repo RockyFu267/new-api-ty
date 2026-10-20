@@ -29,6 +29,8 @@ export interface MessageVersion {
 }
 
 export interface Message {
+  files?: { name: string; text: string }[]
+  images?: string[]
   key: string
   from: MessageRole
   versions: MessageVersion[]

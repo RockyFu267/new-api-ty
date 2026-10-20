@@ -19,6 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 // Static translation keys that don't get picked up by the t('...') regex.
 // These cover dynamic labels (e.g. constants, configs) that are passed into t at runtime.
 export const STATIC_I18N_KEYS = [
+  // Temporary attachment reader errors displayed by the chat composer.
+  'Attachment exceeds 5 MB',
+  'Use UTF-8 text files up to 100,000 characters',
+  'Only LOG, TXT, MD, PNG, JPEG, WebP and GIF are supported',
+  'Unable to read attachment',
   // Administrator usage analysis
   'Active users',
   'Models used',

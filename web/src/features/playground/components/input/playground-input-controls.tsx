@@ -37,6 +37,7 @@ type PlaygroundInputControlsProps = {
   onGroupChange: (value: string) => void
   onModelChange: (value: string) => void
   onStop?: () => void
+  hasAttachments?: boolean
   text: string
   tools: ReactNode
 }
@@ -52,6 +53,7 @@ export function PlaygroundInputControls({
   onGroupChange,
   onModelChange,
   onStop,
+  hasAttachments,
   text,
   tools,
 }: PlaygroundInputControlsProps) {
@@ -65,6 +67,7 @@ export function PlaygroundInputControls({
       isModelLoading,
       models,
       text,
+      hasAttachments,
     })
 
   const renderSelector = () => (

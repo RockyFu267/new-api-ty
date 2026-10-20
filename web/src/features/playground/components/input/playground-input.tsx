@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState } from 'react'
+import { useState, type ReactNode, type ClipboardEventHandler } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
@@ -37,6 +37,10 @@ import { PlaygroundInputControls } from './playground-input-controls'
 import { PlaygroundInputTools } from './playground-input-tools'
 
 interface PlaygroundInputProps {
+  attachmentPanel?: ReactNode
+  hasAttachments?: boolean
+  onAddAttachments?: () => void
+  onPasteAttachments?: ClipboardEventHandler<HTMLTextAreaElement>
   customParametersEnabled?: boolean
   onCustomParametersEnabledChange?: (enabled: boolean) => void
   showSearch?: boolean
@@ -66,6 +70,10 @@ interface PlaygroundInputProps {
 }
 
 export function PlaygroundInput({
+  attachmentPanel,
+  hasAttachments,
+  onAddAttachments,
+  onPasteAttachments,
   customParametersEnabled,
   onCustomParametersEnabledChange,
   showSearch,
@@ -91,21 +99,25 @@ export function PlaygroundInput({
   const [text, setText] = useState('')
 
   const handleSubmit = (message: PromptInputMessage) => {
-    const submittableText = getSubmittableInputText(message, disabled)
+    const submittableText =
+      getSubmittableInputText(message, disabled) ??
+      (!disabled && hasAttachments ? '' : null)
 
-    if (!submittableText) return
+    if (submittableText === null) return
     onSubmit(submittableText)
     setText('')
   }
 
   return (
     <div className='grid shrink-0 gap-4 px-1 md:pb-4'>
+      {attachmentPanel}
       <PromptInput
         className='relative'
         groupClassName='bg-background/95 dark:bg-background/80 border-border/70 shadow-[0_18px_60px_-32px_rgba(0,0,0,0.65)] ring-1 ring-foreground/5 rounded-xl overflow-hidden transition-all duration-200 focus-within:border-primary/45 focus-within:ring-primary/15 focus-within:shadow-[0_22px_70px_-34px_rgba(0,0,0,0.75)]'
         onSubmit={handleSubmit}
       >
         <PromptInputTextarea
+          {...(onPasteAttachments ? { onPaste: onPasteAttachments } : {})}
           autoComplete='off'
           autoCorrect='off'
           autoCapitalize='off'
@@ -130,8 +142,10 @@ export function PlaygroundInput({
             onModelChange={onModelChange}
             onStop={onStop}
             text={text}
+            hasAttachments={hasAttachments}
             tools={
               <PlaygroundInputTools
+                onAddAttachments={onAddAttachments}
                 customParametersEnabled={customParametersEnabled}
                 onCustomParametersEnabledChange={
                   onCustomParametersEnabledChange

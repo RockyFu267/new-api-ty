@@ -69,6 +69,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import { useChatParameterStore } from '@/stores/chat-parameter-store'
 
 import { getChannelModels } from './api'
+import { ChatContextSection } from './chat-context-section'
+import { useTemporaryAttachments } from './temporary-attachments'
 import type { ChannelModel, KnowledgeDocument } from './types'
 
 async function getKnowledgeDocuments(): Promise<KnowledgeDocument[]> {
@@ -106,6 +108,7 @@ function ChannelChatSession(props: {
       loadCompanyData<{ enabled: boolean; usage: QuotaUsage }>('company-quota'),
     refetchInterval: 30000,
   })
+  const attachments = useTemporaryAttachments()
   const [messages, setMessages] = useState<Message[]>([])
   const [config, setConfig] = useState<PlaygroundConfig>({
     ...DEFAULT_CONFIG,
@@ -215,8 +218,9 @@ function ChannelChatSession(props: {
 
   const clearMessages = useCallback(() => {
     conversation.handleEditOpenChange(false)
+    attachments.clear()
     updateMessages([])
-  }, [conversation, updateMessages])
+  }, [attachments, conversation, updateMessages])
 
   const models = useMemo(
     () => [{ label: props.target.model, value: props.target.model }],
@@ -436,65 +440,77 @@ function ChannelChatSession(props: {
       </div>
 
       {(knowledgeQuery.data?.length ?? 0) > 0 ? (
-        <div className='bg-muted/30 max-h-48 overflow-auto border-b px-4 py-3'>
-          <div className='mb-2 flex items-center justify-between'>
-            <p className='text-sm font-medium'>选择本次对话使用的知识库</p>
-            <span className='text-muted-foreground text-xs'>
-              已选 {selectedKnowledgeIds.length} 个文件
-            </span>
+        <ChatContextSection
+          title={t('Knowledge base')}
+          count={selectedKnowledgeIds.length}
+        >
+          <div className='bg-muted/30 max-h-48 overflow-auto border-b px-4 py-3'>
+            <div className='mb-2 flex items-center justify-between'>
+              <p className='text-sm font-medium'>选择本次对话使用的知识库</p>
+              <span className='text-muted-foreground text-xs'>
+                已选 {selectedKnowledgeIds.length} 个文件
+              </span>
+            </div>
+            <div className='bg-background rounded-lg border p-2'>
+              {renderKnowledgeNode(knowledgeTree)}
+            </div>
           </div>
-          <div className='bg-background rounded-lg border p-2'>
-            {renderKnowledgeNode(knowledgeTree)}
-          </div>
-        </div>
+        </ChatContextSection>
       ) : null}
 
       {(privateKnowledgeQuery.data?.documents.length ?? 0) > 0 ? (
-        <div className='max-h-48 overflow-auto border-b bg-violet-500/5 px-4 py-3'>
-          <div className='mb-2 flex items-center justify-between'>
-            <p className='text-sm font-medium'>选择我的私有知识库</p>
-            <span className='text-muted-foreground text-xs'>
-              已选 {selectedPrivateKnowledgeIds.length} 个文件
-            </span>
+        <ChatContextSection
+          title={t('Private knowledge base')}
+          count={selectedPrivateKnowledgeIds.length}
+        >
+          <div className='max-h-48 overflow-auto border-b bg-violet-500/5 px-4 py-3'>
+            <div className='mb-2 flex items-center justify-between'>
+              <p className='text-sm font-medium'>选择我的私有知识库</p>
+              <span className='text-muted-foreground text-xs'>
+                已选 {selectedPrivateKnowledgeIds.length} 个文件
+              </span>
+            </div>
+            <div className='bg-background rounded-lg border p-2'>
+              {renderPrivateKnowledgeNode(privateKnowledgeTree)}
+            </div>
           </div>
-          <div className='bg-background rounded-lg border p-2'>
-            {renderPrivateKnowledgeNode(privateKnowledgeTree)}
-          </div>
-        </div>
+        </ChatContextSection>
       ) : null}
 
       {skillQuery.data ? (
-        <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
-          <div className='flex items-center gap-3'>
-            <div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'>
-              <Sparkles className='size-4' />
+        <ChatContextSection title='Skill' count={showcaseSkillEnabled ? 1 : 0}>
+          <div className='flex items-center justify-between gap-4 border-b bg-violet-500/5 px-4 py-3'>
+            <div className='flex items-center gap-3'>
+              <div className='rounded-lg bg-violet-500/10 p-2 text-violet-500'>
+                <Sparkles className='size-4' />
+              </div>
+              <div>
+                <p className='text-sm font-medium'>
+                  {skillQuery.data.name} Skill
+                </p>
+                <p className='text-muted-foreground text-xs'>
+                  {skillQuery.data.description}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className='text-sm font-medium'>
-                {skillQuery.data.name} Skill
-              </p>
-              <p className='text-muted-foreground text-xs'>
-                {skillQuery.data.description}
-              </p>
+            <div className='flex items-center gap-3'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => window.open('/skill-showcase', '_blank')}
+              >
+                <ExternalLink className='mr-1 size-3.5' />
+                打开展示页
+              </Button>
+              <Switch
+                checked={showcaseSkillEnabled}
+                onCheckedChange={setShowcaseSkillEnabled}
+                aria-label='启用企业展示屏设计师 Skill'
+              />
             </div>
           </div>
-          <div className='flex items-center gap-3'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => window.open('/skill-showcase', '_blank')}
-            >
-              <ExternalLink className='mr-1 size-3.5' />
-              打开展示页
-            </Button>
-            <Switch
-              checked={showcaseSkillEnabled}
-              onCheckedChange={setShowcaseSkillEnabled}
-              aria-label='启用企业展示屏设计师 Skill'
-            />
-          </div>
-        </div>
+        </ChatContextSection>
       ) : null}
 
       {budget.data?.enabled && (
@@ -532,7 +548,11 @@ function ChannelChatSession(props: {
           }
           showSearch={false}
           config={config}
-          disabled={isGenerating}
+          disabled={isGenerating || attachments.reading}
+          attachmentPanel={attachments.panel}
+          hasAttachments={attachments.items.length > 0}
+          onAddAttachments={attachments.open}
+          onPasteAttachments={attachments.onPaste}
           groups={groups}
           groupValue={config.group}
           isGenerating={isGenerating}
@@ -545,9 +565,23 @@ function ChannelChatSession(props: {
           onModelChange={(value) => updateConfig('model', value)}
           onParameterEnabledChange={updateParameterEnabled}
           onStop={stopGeneration}
-          onSubmit={conversation.handleSendMessage}
+          onSubmit={(text) => {
+            if (attachments.reading) return
+            conversation.handleSendMessage(
+              text,
+              attachments.items.flatMap((item) =>
+                item.image ? [item.image] : []
+              ),
+              attachments.items.flatMap((item) =>
+                item.text !== undefined
+                  ? [{ name: item.name, text: item.text }]
+                  : []
+              )
+            )
+            attachments.clear()
+          }}
           parameterEnabled={parameterEnabled}
-          hasMessages={messages.length > 0}
+          hasMessages={messages.length > 0 || attachments.items.length > 0}
         />
       </div>
     </div>

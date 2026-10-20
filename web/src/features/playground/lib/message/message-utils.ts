@@ -154,9 +154,17 @@ export function getTextContent(content: string | ContentPart[]): string {
  */
 export function formatMessageForAPI(message: Message): ChatCompletionMessage {
   const currentVersion = getCurrentVersion(message)
+  const text = [
+    currentVersion.content,
+    ...(message.files ?? []).map(
+      (file) => `\n--- ${file.name} ---\n${file.text}\n---`
+    ),
+  ]
+    .filter(Boolean)
+    .join('\n')
   return {
     role: message.from,
-    content: currentVersion.content,
+    content: buildMessageContent(text, message.images),
   }
 }
 

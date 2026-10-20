@@ -48,7 +48,7 @@ func GetRequestBody(c *gin.Context) (io.Seeker, error) {
 	cached, exists := c.Get(KeyRequestBody)
 	if exists && cached != nil {
 		if b, ok := cached.([]byte); ok {
-			bs, err := CreateBodyStorage(b)
+			bs, err := CreateRequestBodyStorage(c, b)
 			if err != nil {
 				return nil, err
 			}
@@ -66,7 +66,20 @@ func GetRequestBody(c *gin.Context) (io.Seeker, error) {
 	contentLength := c.Request.ContentLength
 
 	// 使用新的存储系统
-	storage, err := CreateBodyStorageFromReader(c.Request.Body, contentLength, maxBytes)
+	var storage BodyStorage
+	var err error
+	if IsTransientChatRequest(c) {
+		var data []byte
+		data, err = io.ReadAll(io.LimitReader(c.Request.Body, maxBytes+1))
+		if err == nil && int64(len(data)) > maxBytes {
+			err = ErrRequestBodyTooLarge
+		}
+		if err == nil {
+			storage = newMemoryStorage(data)
+		}
+	} else {
+		storage, err = CreateBodyStorageFromReader(c.Request.Body, contentLength, maxBytes)
+	}
 	_ = c.Request.Body.Close()
 
 	if err != nil {
@@ -113,7 +126,7 @@ func ReplaceRequestBody(c *gin.Context, data []byte) error {
 			_ = bs.Close()
 		}
 	}
-	storage, err := CreateBodyStorage(data)
+	storage, err := CreateRequestBodyStorage(c, data)
 	if err != nil {
 		return err
 	}
@@ -401,4 +414,16 @@ func multipartMemoryLimit() int64 {
 		limitMB = 32
 	}
 	return int64(limitMB) << 20
+}
+
+// Playground messages and temporary attachments must never use disk body caches.
+func IsTransientChatRequest(c *gin.Context) bool {
+	return c != nil && c.Request != nil && c.Request.URL.Path == "/pg/chat/completions"
+}
+
+func CreateRequestBodyStorage(c *gin.Context, data []byte) (BodyStorage, error) {
+	if IsTransientChatRequest(c) {
+		return newMemoryStorage(data), nil
+	}
+	return CreateBodyStorage(data)
 }

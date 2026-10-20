@@ -47,6 +47,7 @@ import type { ParameterEnabled, PlaygroundConfig } from '../../types'
 import { PlaygroundParameterPanel } from './playground-parameter-panel'
 
 type PlaygroundInputToolsProps = {
+  onAddAttachments?: () => void
   customParametersEnabled?: boolean
   onCustomParametersEnabledChange?: (enabled: boolean) => void
   showSearch?: boolean
@@ -66,6 +67,7 @@ type PlaygroundInputToolsProps = {
 }
 
 export function PlaygroundInputTools({
+  onAddAttachments,
   customParametersEnabled,
   onCustomParametersEnabledChange,
   showSearch,
@@ -101,40 +103,51 @@ export function PlaygroundInputTools({
   return (
     <>
       <PromptInputTools className='bg-background/70 border-border/60 rounded-lg border p-1 shadow-xs'>
-        <Tooltip>
-          <DropdownMenu>
-            <TooltipTrigger
-              render={
-                <DropdownMenuTrigger
-                  render={
-                    <PromptInputButton
-                      aria-label={t('Attach')}
-                      className='text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium'
-                      disabled={disabled}
-                      variant='ghost'
-                    />
-                  }
-                >
-                  <PaperclipIcon size={16} />
-                </DropdownMenuTrigger>
-              }
-            />
-            <TooltipContent>
-              <p>{t('Attach')}</p>
-            </TooltipContent>
-            <DropdownMenuContent align='start'>
-              {ATTACHMENT_ACTIONS.map(({ action, icon: Icon, label }) => (
-                <DropdownMenuItem
-                  key={action}
-                  onClick={() => handleFileAction(action)}
-                >
-                  <Icon className='mr-2' size={16} />
-                  {t(label)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </Tooltip>
+        {onAddAttachments ? (
+          <PromptInputButton
+            type='button'
+            aria-label={t('Attach')}
+            disabled={disabled}
+            onClick={onAddAttachments}
+          >
+            <PaperclipIcon size={16} />
+          </PromptInputButton>
+        ) : (
+          <Tooltip>
+            <DropdownMenu>
+              <TooltipTrigger
+                render={
+                  <DropdownMenuTrigger
+                    render={
+                      <PromptInputButton
+                        aria-label={t('Attach')}
+                        className='text-muted-foreground hover:text-foreground hover:bg-muted/70 font-medium'
+                        disabled={disabled}
+                        variant='ghost'
+                      />
+                    }
+                  >
+                    <PaperclipIcon size={16} />
+                  </DropdownMenuTrigger>
+                }
+              />
+              <TooltipContent>
+                <p>{t('Attach')}</p>
+              </TooltipContent>
+              <DropdownMenuContent align='start'>
+                {ATTACHMENT_ACTIONS.map(({ action, icon: Icon, label }) => (
+                  <DropdownMenuItem
+                    key={action}
+                    onClick={() => handleFileAction(action)}
+                  >
+                    <Icon className='mr-2' size={16} />
+                    {t(label)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Tooltip>
+        )}
 
         {showSearch !== false && (
           <Tooltip>

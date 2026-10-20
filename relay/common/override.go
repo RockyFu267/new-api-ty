@@ -188,7 +188,7 @@ func ApplyParamOverrideWithRelayInfo(jsonData []byte, info *RelayInfo) ([]byte, 
 
 	overrideCtx := BuildParamOverrideContext(info)
 	var recorder *paramOverrideAuditRecorder
-	if shouldEnableParamOverrideAudit(paramOverride) {
+	if (info == nil || !info.IsPlayground) && shouldEnableParamOverrideAudit(paramOverride) {
 		recorder = &paramOverrideAuditRecorder{}
 		overrideCtx[paramOverrideContextAuditRecorder] = recorder
 	}
