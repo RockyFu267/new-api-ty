@@ -10,6 +10,8 @@
 
 ## 当前文档
 
+- `sqlite-concurrency/README.md`：SQLite 并发配额写入、结算及用量汇总锁冲突修复。
+
 - `chat-attachments/README.md`：聊天知识库和 Skill 收起、临时文本与图片附件、剪贴板截图及禁止落盘。
 
 - `department-models/README.md`：部门模型授权、默认禁止规则与部门策略入口。

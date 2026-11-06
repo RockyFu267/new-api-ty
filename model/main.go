@@ -146,7 +146,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, common.DatabaseType, error)
 		}
 		if strings.HasPrefix(dsn, "local") {
 			common.SysLog("SQL_DSN not set, using SQLite as database")
-			db, err := gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig(true))
+			db, err := openSQLiteDatabase(common.SQLitePath)
 			return db, common.DatabaseTypeSQLite, err
 		}
 		// Use MySQL
@@ -164,7 +164,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, common.DatabaseType, error)
 	}
 	// Use SQLite
 	common.SysLog("SQL_DSN not set, using SQLite as database")
-	db, err := gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig(true))
+	db, err := openSQLiteDatabase(common.SQLitePath)
 	return db, common.DatabaseTypeSQLite, err
 }
 
@@ -193,8 +193,12 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
-		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
+		maxIdle, maxOpen := 100, 1000
+		if dbType == common.DatabaseTypeSQLite {
+			maxIdle, maxOpen = 4, 4
+		}
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", maxIdle))
+		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", maxOpen))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
 		if !common.IsMasterNode {
@@ -237,8 +241,12 @@ func InitLogDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
-		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
+		maxIdle, maxOpen := 100, 1000
+		if dbType == common.DatabaseTypeSQLite {
+			maxIdle, maxOpen = 4, 4
+		}
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", maxIdle))
+		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", maxOpen))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
 		if !common.IsMasterNode {
@@ -895,4 +903,12 @@ func PingDB() error {
 	lastPingTime = time.Now()
 	common.SysLog("Database pinged successfully")
 	return nil
+}
+
+func openSQLiteDatabase(path string) (*gorm.DB, error) {
+	dsn, err := sqliteConnectionDSN(path)
+	if err != nil {
+		return nil, err
+	}
+	return gorm.Open(sqlite.Open(dsn), newGormConfig(true))
 }

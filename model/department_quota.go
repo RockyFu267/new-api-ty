@@ -165,7 +165,8 @@ func ReserveDepartmentQuota(requestId string, userId int, modelName string, amou
 		return nil, fmt.Errorf("invalid quota reservation")
 	}
 	charge := &DepartmentQuotaCharge{}
-	err := DB.Transaction(func(tx *gorm.DB) error {
+	err := quotaWriteTransaction(DB, func(tx *gorm.DB) error {
+		*charge = DepartmentQuotaCharge{}
 		var user User
 		if err := lockForUpdate(tx).First(&user, userId).Error; err != nil {
 			return err
@@ -204,7 +205,7 @@ func FinishDepartmentQuota(requestId string, amount int64, refund bool) error {
 	if amount < 0 || amount > int64(common.MaxWalletQuota) {
 		return fmt.Errorf("invalid settlement")
 	}
-	return DB.Transaction(func(tx *gorm.DB) error {
+	return quotaWriteTransaction(DB, func(tx *gorm.DB) error {
 		var charge DepartmentQuotaCharge
 		if err := lockForUpdate(tx).First(&charge, "request_id = ?", requestId).Error; err != nil {
 			return err
@@ -225,7 +226,7 @@ func ResizeDepartmentQuota(requestId string, target int64) error {
 	if target < 0 || target > int64(common.MaxWalletQuota) {
 		return fmt.Errorf("invalid reservation")
 	}
-	return DB.Transaction(func(tx *gorm.DB) error {
+	return quotaWriteTransaction(DB, func(tx *gorm.DB) error {
 		var existing DepartmentQuotaCharge
 		if err := tx.First(&existing, "request_id = ?", requestId).Error; err != nil {
 			return err

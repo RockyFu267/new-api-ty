@@ -215,7 +215,7 @@ func SyncUsageAnalysis() error {
 			return err
 		}
 	}
-	return DB.Transaction(func(tx *gorm.DB) error {
+	return quotaWriteTransaction(DB, func(tx *gorm.DB) error {
 		var state UsageAnalysisState
 		if err := lockForUpdate(tx).First(&state, 1).Error; err != nil {
 			return err
