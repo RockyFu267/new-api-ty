@@ -114,6 +114,11 @@ export function useSidebarData(): SidebarData {
             icon: Wallet,
           },
           {
+            title: t('DeepSeek bill demo'),
+            url: '/deepseek-bill-demo',
+            icon: Activity,
+          },
+          {
             title: t('Profile'),
             url: '/profile',
             icon: User,

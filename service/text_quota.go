@@ -381,6 +381,26 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 		summary.Quota = 1
 	}
 
+	if snap := relayInfo.DeepSeekBillingSnapshot; snap != nil {
+		input := summary.PromptTokens
+		if summary.IsClaudeUsageSemantic {
+			input += summary.CacheTokens + cacheWriteTokensTotal(summary)
+		}
+		if usage.InputTokens > 0 && usage.UsageSource != "" {
+			input = usage.InputTokens
+		}
+		input = common.Max(input, 0)
+		cache := min(common.Max(summary.CacheTokens, 0), input)
+		charge, err := snap.Calculate(int64(input), int64(cache), int64(common.Max(summary.CompletionTokens, 0)))
+		if err == nil {
+			summary.Quota = charge.Quota
+			relayInfo.DeepSeekCharge = &charge
+			summary.ToolCallSurchargeQuota = decimal.Zero
+			summary.ToolSurchargeItems = nil
+		} else {
+			logger.LogError(ctx, "DeepSeek billing calculation failed: "+err.Error())
+		}
+	}
 	return summary
 }
 
@@ -409,7 +429,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 
 	var tieredResult *billingexpr.TieredResult
 	tieredBillingApplied := false
-	if originUsage != nil {
+	if originUsage != nil && relayInfo.DeepSeekBillingSnapshot == nil {
 		var tieredUsedVars map[string]bool
 		if snap := relayInfo.TieredBillingSnapshot; snap != nil {
 			tieredUsedVars = billingexpr.UsedVars(snap.ExprString)
@@ -519,6 +539,9 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	}
 	if tieredBillingApplied {
 		InjectTieredBillingInfo(other, relayInfo, tieredResult)
+	}
+	if relayInfo.DeepSeekCharge != nil {
+		other["deepseek_billing"] = relayInfo.DeepSeekCharge
 	}
 
 	attachQuotaSaturation(ctx, relayInfo, other)

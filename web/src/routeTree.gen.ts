@@ -39,6 +39,7 @@ import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedChatChatIdRouteImport } from './routes/_authenticated/chat/$chatId'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedDashboardSectionRouteImport } from './routes/_authenticated/dashboard/$section'
+import { Route as AuthenticatedDeepseekBillDemoIndexRouteImport } from './routes/_authenticated/deepseek-bill-demo/index'
 import { Route as AuthenticatedDepartmentQuotasIndexRouteImport } from './routes/_authenticated/department-quotas/index'
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
@@ -224,6 +225,12 @@ const AuthenticatedDashboardSectionRoute =
   AuthenticatedDashboardSectionRouteImport.update({
     id: '/dashboard/$section',
     path: '/dashboard/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDeepseekBillDemoIndexRoute =
+  AuthenticatedDeepseekBillDemoIndexRouteImport.update({
+    id: '/deepseek-bill-demo/',
+    path: '/deepseek-bill-demo/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDepartmentQuotasIndexRoute =
@@ -460,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/channels/': typeof AuthenticatedChannelsIndexRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/deepseek-bill-demo/': typeof AuthenticatedDeepseekBillDemoIndexRoute
   '/department-quotas/': typeof AuthenticatedDepartmentQuotasIndexRoute
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
@@ -523,6 +531,7 @@ export interface FileRoutesByTo {
   '/channels': typeof AuthenticatedChannelsIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/deepseek-bill-demo': typeof AuthenticatedDeepseekBillDemoIndexRoute
   '/department-quotas': typeof AuthenticatedDepartmentQuotasIndexRoute
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
@@ -590,6 +599,7 @@ export interface FileRoutesById {
   '/_authenticated/channels/': typeof AuthenticatedChannelsIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/_authenticated/deepseek-bill-demo/': typeof AuthenticatedDeepseekBillDemoIndexRoute
   '/_authenticated/department-quotas/': typeof AuthenticatedDepartmentQuotasIndexRoute
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/channels/'
     | '/chat/'
     | '/dashboard/'
+    | '/deepseek-bill-demo/'
     | '/department-quotas/'
     | '/keys/'
     | '/models/'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/channels'
     | '/chat'
     | '/dashboard'
+    | '/deepseek-bill-demo'
     | '/department-quotas'
     | '/keys'
     | '/models'
@@ -785,6 +797,7 @@ export interface FileRouteTypes {
     | '/_authenticated/channels/'
     | '/_authenticated/chat/'
     | '/_authenticated/dashboard/'
+    | '/_authenticated/deepseek-bill-demo/'
     | '/_authenticated/department-quotas/'
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
@@ -1047,6 +1060,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/$section'
       fullPath: '/dashboard/$section'
       preLoaderRoute: typeof AuthenticatedDashboardSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/deepseek-bill-demo/': {
+      id: '/_authenticated/deepseek-bill-demo/'
+      path: '/deepseek-bill-demo'
+      fullPath: '/deepseek-bill-demo/'
+      preLoaderRoute: typeof AuthenticatedDeepseekBillDemoIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/department-quotas/': {
@@ -1384,6 +1404,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChannelsIndexRoute: typeof AuthenticatedChannelsIndexRoute
   AuthenticatedChatIndexRoute: typeof AuthenticatedChatIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
+  AuthenticatedDeepseekBillDemoIndexRoute: typeof AuthenticatedDeepseekBillDemoIndexRoute
   AuthenticatedDepartmentQuotasIndexRoute: typeof AuthenticatedDepartmentQuotasIndexRoute
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
@@ -1413,6 +1434,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChannelsIndexRoute: AuthenticatedChannelsIndexRoute,
   AuthenticatedChatIndexRoute: AuthenticatedChatIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  AuthenticatedDeepseekBillDemoIndexRoute:
+    AuthenticatedDeepseekBillDemoIndexRoute,
   AuthenticatedDepartmentQuotasIndexRoute:
     AuthenticatedDepartmentQuotasIndexRoute,
   AuthenticatedKeysIndexRoute: AuthenticatedKeysIndexRoute,

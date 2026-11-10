@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { ExchangeRateNotice } from '@/components/exchange-rate-notice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatQuota } from '@/lib/format'
@@ -34,6 +35,7 @@ export function CompanyBills(props: { admin?: boolean; userId?: number }) {
   })
   return (
     <div className='space-y-3'>
+      <ExchangeRateNotice />
       <div className='flex flex-wrap gap-2'>
         {(['department_quota', 'wallet'] as const).map((value) => (
           <Button

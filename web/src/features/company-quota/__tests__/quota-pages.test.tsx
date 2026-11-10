@@ -10,7 +10,10 @@ import { CompanyQuota } from '../index'
 import { CompanyWallet } from '../wallet'
 import { WalletAdjustments } from '../wallet-adjustments'
 
-vi.mock('@/lib/api', () => ({ api: { get: vi.fn(), put: vi.fn() } }))
+vi.mock('@/lib/api', () => ({
+  api: { get: vi.fn(), put: vi.fn() },
+  getStatus: vi.fn(async () => ({ usd_exchange_rate: 7.3 })),
+}))
 
 const clients: QueryClient[] = []
 const period = {

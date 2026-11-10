@@ -10,6 +10,10 @@
 
 ## 当前文档
 
+- `page-scrolling/README.md`：公共页面滚动修复，确保长页面底部内容可达并保留聊天自身滚动。
+
+- `deepseek-bill-demo/README.md`：DeepSeek Flash 专用原厂峰谷计费、规则版本、共用部门配额及历史回算，管理员可查全员、普通用户仅可查本人。
+
 - `sqlite-concurrency/README.md`：SQLite 并发配额写入、结算及用量汇总锁冲突修复。
 
 - `chat-attachments/README.md`：聊天知识库和 Skill 收起、临时文本与图片附件、剪贴板截图及禁止落盘。

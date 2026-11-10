@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -11,6 +12,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relaykit/types"
 	"github.com/QuantumNous/new-api/setting/billing_setting"
+	ds "github.com/QuantumNous/new-api/setting/deepseek_setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	hosttypes "github.com/QuantumNous/new-api/types"
@@ -74,6 +76,30 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 	modelPrice, usePrice := ratio_setting.GetModelPrice(info.OriginModelName, false)
 
 	groupRatioInfo := HandleGroupRatio(c, info)
+	if !info.DeepSeekBillingChecked && info.OriginModelName == ds.Model {
+		store, err := model.GetDeepSeekBillingRules()
+		if err != nil {
+			return hosttypes.PriceData{}, err
+		}
+		at := info.StartTime
+		if at.IsZero() {
+			at = time.Now()
+		}
+		info.DeepSeekBillingSnapshot = store.Select(info.OriginModelName, at)
+		info.DeepSeekBillingChecked = true
+	}
+	if snap := info.DeepSeekBillingSnapshot; snap != nil {
+		info.TieredBillingSnapshot = nil
+		completion := meta.MaxTokens
+		if completion <= 0 {
+			completion = defaultTieredPreConsumeMaxTokens
+		}
+		charge, err := snap.Calculate(int64(common.Max(promptTokens, common.PreConsumedQuota)), 0, int64(completion))
+		if err != nil {
+			return hosttypes.PriceData{}, err
+		}
+		return hosttypes.PriceData{ModelRatio: snap.Rates.Input / snap.Rule.FX * common.QuotaPerUnit / 1000000, CompletionRatio: snap.Rates.Output / snap.Rates.Input, CacheRatio: snap.Rates.Cache / snap.Rates.Input, GroupRatioInfo: hosttypes.GroupRatioInfo{GroupRatio: 1, GroupSpecialRatio: -1}, QuotaToPreConsume: charge.Quota}, nil
+	}
 
 	// Check if this model uses tiered_expr billing
 	if billing_setting.GetBillingMode(info.OriginModelName) == billing_setting.BillingModeTieredExpr {

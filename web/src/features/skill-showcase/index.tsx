@@ -38,7 +38,7 @@ export function SkillShowcase() {
   }
 
   return (
-    <div className={`relative min-h-full overflow-hidden bg-gradient-to-br ${themeClasses[config.template] ?? themeClasses['cyber-blue']}`}>
+    <div className={`relative min-h-full shrink-0 overflow-hidden bg-gradient-to-br ${themeClasses[config.template] ?? themeClasses['cyber-blue']}`}>
       <div className='absolute -left-40 -top-40 size-96 rounded-full bg-cyan-400/20 blur-3xl' />
       <div className='absolute -bottom-48 -right-24 size-[32rem] rounded-full bg-violet-500/20 blur-3xl' />
       <div className='relative mx-auto flex min-h-full max-w-7xl flex-col px-6 py-8 lg:px-12'>

@@ -8,5 +8,5 @@ export const Route = createFileRoute('/_authenticated/skill-showcase/')({
 })
 
 function SkillShowcasePage() {
-  return <Main className='p-0'><SkillShowcase /></Main>
+  return <Main className='overflow-auto p-0'><SkillShowcase /></Main>
 }

@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { Activity, BarChart3, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { ExchangeRateNotice } from '@/components/exchange-rate-notice'
 import { StatusBadge } from '@/components/status-badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
@@ -183,6 +184,9 @@ export function ProfileHeader({ profile, loading }: ProfileHeaderProps) {
               </div>
             </div>
           ))}
+        </div>
+        <div className='px-3 pb-3 sm:px-5'>
+          <ExchangeRateNotice />
         </div>
       </div>
     </Card>

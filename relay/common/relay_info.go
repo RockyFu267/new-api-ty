@@ -15,6 +15,7 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/dto"
 	"github.com/QuantumNous/new-api/relaykit/relayconvert/convmeta"
 	"github.com/QuantumNous/new-api/relaykit/types"
+	ds "github.com/QuantumNous/new-api/setting/deepseek_setting"
 	"github.com/QuantumNous/new-api/setting/model_setting"
 	hosttypes "github.com/QuantumNous/new-api/types"
 
@@ -81,16 +82,19 @@ type TokenCountMeta struct {
 }
 
 type RelayInfo struct {
-	TokenId           int
-	TokenKey          string
-	TokenGroup        string
-	UserId            int
-	UsingGroup        string // 使用的分组，当auto跨分组重试时，会变动
-	UserGroup         string // 用户所在分组
-	TokenUnlimited    bool
-	StartTime         time.Time
-	FirstResponseTime time.Time
-	isFirstResponse   bool
+	DeepSeekBillingChecked  bool
+	DeepSeekBillingSnapshot *ds.Snapshot
+	DeepSeekCharge          *ds.Charge
+	TokenId                 int
+	TokenKey                string
+	TokenGroup              string
+	UserId                  int
+	UsingGroup              string // 使用的分组，当auto跨分组重试时，会变动
+	UserGroup               string // 用户所在分组
+	TokenUnlimited          bool
+	StartTime               time.Time
+	FirstResponseTime       time.Time
+	isFirstResponse         bool
 	//SendLastReasoningResponse bool
 	IsStream               bool
 	IsGeminiBatchEmbedding bool

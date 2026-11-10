@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
+import { ExchangeRateNotice } from '@/components/exchange-rate-notice'
 import { formatQuota } from '@/lib/format'
 
 import type { Period, QuotaUsage } from './api'
@@ -45,6 +46,7 @@ export function QuotaUsageCard(props: { usage: QuotaUsage; enabled: boolean }) {
   const { t } = useTranslation()
   return (
     <div className='space-y-4 rounded-xl border p-4'>
+      <ExchangeRateNotice />
       <p className='font-semibold'>
         {t('Department')}: {props.usage.department_name || t('Unassigned')}
       </p>

@@ -1,3 +1,4 @@
+import { DeepSeekPricingNotice } from '@/features/deepseek-bill-demo/rules'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -106,13 +107,21 @@ const BILLING_SECTIONS = [
     id: 'model-pricing',
     titleKey: 'Model Pricing',
     build: (settings: BillingSettings) => (
-      <RatioSettingsCard
-        titleKey='Model Pricing'
-        modelDefaults={getModelDefaults(settings)}
-        groupDefaults={getGroupDefaults(settings)}
-        toolPricesDefault={settings['tool_price_setting.prices']}
-        visibleTabs={['models', 'unset-models', 'tool-prices', 'upstream-sync']}
-      />
+      <div className='space-y-4'>
+        <DeepSeekPricingNotice />
+        <RatioSettingsCard
+          titleKey='Model Pricing'
+          modelDefaults={getModelDefaults(settings)}
+          groupDefaults={getGroupDefaults(settings)}
+          toolPricesDefault={settings['tool_price_setting.prices']}
+          visibleTabs={[
+            'models',
+            'unset-models',
+            'tool-prices',
+            'upstream-sync',
+          ]}
+        />
+      </div>
     ),
   },
   {
