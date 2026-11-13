@@ -19,6 +19,8 @@
 
 - `deepseek-bill-demo/async-reports.md`：独立进程／独立数据库生成 DS 账单，查询不扫描调用日志，包含延迟提示、游标分页及 AI 调用隔离验证。
 
+- `deepseek-bill-demo/production-rollout-20261113.md`：DS 异步报表生产发布，确认 47.33 保持生产库、独立报表库、限速补算、真实调用对账及保留 PG 数据的回退方法。
+
 - `sqlite-concurrency/README.md`：SQLite 并发配额写入、结算及用量汇总锁冲突修复。
 
 - `chat-attachments/README.md`：聊天知识库和 Skill 收起、临时文本与图片附件、剪贴板截图及禁止落盘。

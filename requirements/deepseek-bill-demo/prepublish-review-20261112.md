@@ -2,6 +2,8 @@
 
 状态：2026-11-12 本地复核完成，**未发布到 47.33**。本轮没有修改生产服务器。
 
+后续状态：2026-11-13 用户明确授权发布，已上线，见 [生产发布记录](production-rollout-20261113.md)。以下保留 11 月 12 日的审查结论和当时的部署状态。
+
 ## 代码与发布范围
 
 以 12:07 已发布 PG 版本的源文件清单、SHA-256 及 Git 基线为参照核对差异。`service/billing_session.go`、`service/quota.go`、`service/text_quota.go`、`model/department_quota.go`、`model/quota_reserve.go`、用户／Key／渠道更新和 DS 定价规则文件没有本轮新增变更。不要把这些文件相对旧 Git 提交的差异误认为本轮修改。
