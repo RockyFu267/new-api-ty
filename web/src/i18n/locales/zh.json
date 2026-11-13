@@ -5549,5 +5549,11 @@
     "Attached image": "附加图片",
     "Private knowledge base": "私有知识库",
     "Collapse": "收起",
-    "Expand": "展开"
+    "Expand": "展开",
+    "Background billing reports are not configured yet. No live log scan will be started.": "后台账单服务尚未配置，不会临时扫描调用日志。",
+    "Billing history is being prepared in the background. AI requests do not wait for it.": "正在后台生成历史账单，AI 调用无需等待报表生成。",
+    "Approximate history preparation progress": "历史账单准备进度（约）",
+    "Background reporting is paused. Showing the last generated bill.": "后台统计暂未更新，当前显示上次已生成的账单。",
+    "Bills are generated in the background and may be delayed. Refresh only reads generated results.": "账单由后台定时生成，可能存在延迟；刷新仅查询已生成的结果。",
+    "Report updated at": "统计更新时间"
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -32,13 +33,14 @@ func DeepSeekBillDemo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "invalid page"})
 		return
 	}
-	getReport := model.GetDeepSeekSelfDemoReport
-	if admin {
-		getReport = model.GetDeepSeekDemoReport
-	}
-	report, err := getReport(c.DefaultQuery("start", now.AddDate(0, 0, -29).Format("2006-01-02")), c.DefaultQuery("end", now.Format("2006-01-02")), user, page)
+	report, err := model.ReadDeepSeekReport(c.Request.Context(), c.DefaultQuery("start", now.AddDate(0, 0, -29).Format("2006-01-02")), c.DefaultQuery("end", now.Format("2006-01-02")), user, page, !admin, c.Query("cursor"))
 	if err != nil {
-		common.ApiError(c, err)
+		if errors.Is(err, model.ErrInvalidDeepSeekReportQuery) {
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+		common.SysError("DeepSeek report query unavailable: " + err.Error())
+		c.JSON(http.StatusServiceUnavailable, gin.H{"success": false, "message": "Billing reports are temporarily unavailable. Try again later."})
 		return
 	}
 	common.ApiSuccess(c, report)

@@ -1396,18 +1396,22 @@ func UpdateUserUsedQuota(id int, quota int) {
 		addNewRecord(BatchUpdateTypeUsedQuota, id, quota)
 		return
 	}
-	if err := DB.Model(&User{}).Where("id = ?", id).Update("used_quota", gorm.Expr("used_quota + ?", quota)).Error; err != nil {
+	if err := retryDatabaseWrite(DB, func() error {
+		return DB.Model(&User{}).Where("id = ?", id).Update("used_quota", gorm.Expr("used_quota + ?", quota)).Error
+	}); err != nil {
 		common.SysLog("failed to update user used quota: " + err.Error())
 	}
 }
 
 func updateUserUsedQuotaAndRequestCount(id int, quota int, count int) {
-	err := DB.Model(&User{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"used_quota":    gorm.Expr("used_quota + ?", quota),
-			"request_count": gorm.Expr("request_count + ?", count),
-		},
-	).Error
+	err := retryDatabaseWrite(DB, func() error {
+		return DB.Model(&User{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"used_quota":    gorm.Expr("used_quota + ?", quota),
+				"request_count": gorm.Expr("request_count + ?", count),
+			},
+		).Error
+	})
 	if err != nil {
 		common.SysLog("failed to update user used quota and request count: " + err.Error())
 		return
@@ -1424,13 +1428,15 @@ func updateUserQuotaUsedQuotaAndRequestCount(id int, quota int, usedQuota int, r
 		return
 	}
 
-	err := DB.Model(&User{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"quota":         gorm.Expr("quota + ?", quota),
-			"used_quota":    gorm.Expr("used_quota + ?", usedQuota),
-			"request_count": gorm.Expr("request_count + ?", requestCount),
-		},
-	).Error
+	err := retryDatabaseWrite(DB, func() error {
+		return DB.Model(&User{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"quota":         gorm.Expr("quota + ?", quota),
+				"used_quota":    gorm.Expr("used_quota + ?", usedQuota),
+				"request_count": gorm.Expr("request_count + ?", requestCount),
+			},
+		).Error
+	})
 	if err != nil {
 		common.SysLog("failed to batch update user quota, used quota and request count: " + err.Error())
 	}

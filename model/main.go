@@ -196,6 +196,8 @@ func InitDB() (err error) {
 		maxIdle, maxOpen := 100, 1000
 		if dbType == common.DatabaseTypeSQLite {
 			maxIdle, maxOpen = 4, 4
+		} else if dbType == common.DatabaseTypePostgreSQL {
+			maxIdle, maxOpen = 16, 32
 		}
 		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", maxIdle))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", maxOpen))
@@ -244,6 +246,8 @@ func InitLogDB() (err error) {
 		maxIdle, maxOpen := 100, 1000
 		if dbType == common.DatabaseTypeSQLite {
 			maxIdle, maxOpen = 4, 4
+		} else if dbType == common.DatabaseTypePostgreSQL {
+			maxIdle, maxOpen = 16, 32
 		}
 		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", maxIdle))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", maxOpen))
@@ -349,6 +353,7 @@ func migrateDB() error {
 		&DepartmentModelPolicy{},
 		&DepartmentQuotaRule{},
 		&DepartmentQuotaCharge{},
+		&DepartmentQuotaCounter{},
 		&UserDepartment{},
 		&KnowledgeDocument{},
 		&PrivateKnowledgeDocument{},
@@ -421,6 +426,7 @@ func migrateDBFast() error {
 		{&DepartmentModelPolicy{}, "DepartmentModelPolicy"},
 		{&DepartmentQuotaRule{}, "DepartmentQuotaRule"},
 		{&DepartmentQuotaCharge{}, "DepartmentQuotaCharge"},
+		{&DepartmentQuotaCounter{}, "DepartmentQuotaCounter"},
 		{&UserDepartment{}, "UserDepartment"},
 		{&KnowledgeDocument{}, "KnowledgeDocument"},
 		{&PrivateKnowledgeDocument{}, "PrivateKnowledgeDocument"},
@@ -774,6 +780,11 @@ func closeDB(db *gorm.DB) error {
 }
 
 func CloseDB() error {
+	if DeepSeekReportDB != nil && DeepSeekReportDB != DB && DeepSeekReportDB != LOG_DB {
+		if err := closeDB(DeepSeekReportDB); err != nil {
+			return err
+		}
+	}
 	if LOG_DB != DB {
 		err := closeDB(LOG_DB)
 		if err != nil {

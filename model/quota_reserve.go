@@ -110,14 +110,16 @@ func persistUserQuotaDelta(id int, delta int) error {
 		addNewRecord(BatchUpdateTypeUserQuota, id, delta)
 		return nil
 	}
-	result := DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", delta))
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected != 1 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	return retryDatabaseWrite(DB, func() error {
+		result := DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", delta))
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
 }
 
 func persistTokenQuotaDelta(id int, delta int) error {
@@ -125,38 +127,50 @@ func persistTokenQuotaDelta(id int, delta int) error {
 		addNewRecord(BatchUpdateTypeTokenQuota, id, delta)
 		return nil
 	}
-	result := DB.Model(&Token{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota + ?", delta),
-			"used_quota":    gorm.Expr("used_quota - ?", delta),
-			"accessed_time": common.GetTimestamp(),
-		},
-	)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected != 1 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	return retryDatabaseWrite(DB, func() error {
+		result := DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota + ?", delta),
+				"used_quota":    gorm.Expr("used_quota - ?", delta),
+				"accessed_time": common.GetTimestamp(),
+			},
+		)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
 }
 
 func reserveUserQuotaDB(id int, quota int) (bool, error) {
-	result := DB.Model(&User{}).
-		Where("id = ? AND quota >= ?", id, quota).
-		Update("quota", gorm.Expr("quota - ?", quota))
-	return result.RowsAffected == 1, result.Error
+	reserved := false
+	err := retryDatabaseWrite(DB, func() error {
+		result := DB.Model(&User{}).
+			Where("id = ? AND quota >= ?", id, quota).
+			Update("quota", gorm.Expr("quota - ?", quota))
+		reserved = result.RowsAffected == 1
+		return result.Error
+	})
+	return reserved, err
 }
 
 func reserveTokenQuotaDB(id int, quota int) (bool, error) {
-	result := DB.Model(&Token{}).
-		Where("id = ? AND remain_quota >= ?", id, quota).
-		Updates(map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota - ?", quota),
-			"used_quota":    gorm.Expr("used_quota + ?", quota),
-			"accessed_time": common.GetTimestamp(),
-		})
-	return result.RowsAffected == 1, result.Error
+	reserved := false
+	err := retryDatabaseWrite(DB, func() error {
+		result := DB.Model(&Token{}).
+			Where("id = ? AND remain_quota >= ?", id, quota).
+			Updates(map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota - ?", quota),
+				"used_quota":    gorm.Expr("used_quota + ?", quota),
+				"accessed_time": common.GetTimestamp(),
+			})
+		reserved = result.RowsAffected == 1
+		return result.Error
+	})
+	return reserved, err
 }
 
 // TryReserveUserQuota atomically checks and deducts a user's wallet quota.

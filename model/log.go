@@ -100,7 +100,8 @@ func ensureLogRequestId(log *Log) {
 
 func createLog(log *Log) error {
 	ensureLogRequestId(log)
-	return LOG_DB.Create(log).Error
+	originalID := log.Id
+	return retryDatabaseWrite(LOG_DB, func() error { log.Id = originalID; return LOG_DB.Create(log).Error })
 }
 
 func clickHouseLogOrder(prefix string) string {
@@ -774,7 +775,35 @@ func DeleteOldLogBatch(ctx context.Context, targetTimestamp int64, limit int) (i
 		return total, nil
 	}
 
-	result := LOG_DB.WithContext(ctx).Where("created_at < ?", targetTimestamp).Limit(limit).Delete(&Log{})
+	// Select a bounded batch first: PostgreSQL does not support DELETE LIMIT.
+	var candidates []Log
+	if err := LOG_DB.WithContext(ctx).Select("id,type,model_name,request_id").Where("created_at < ?", targetTimestamp).Order("id ASC").Limit(limit).Find(&candidates).Error; err != nil {
+		return 0, err
+	}
+	ids := make([]int, 0, len(candidates))
+	dsIDs := make([]string, 0)
+	for _, row := range candidates {
+		ids = append(ids, row.Id)
+		if row.Type == LogTypeConsume && row.ModelName == DeepSeekDemoModel {
+			dsIDs = append(dsIDs, deepSeekBillFactKey(row))
+		}
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	if DeepSeekReportingConfigured() && len(dsIDs) > 0 {
+		if DeepSeekReportDB == nil {
+			return 0, fmt.Errorf("billing reports are unavailable; retry log cleanup later")
+		}
+		var imported int64
+		if err := DeepSeekReportDB.WithContext(ctx).Model(&DeepSeekBillFact{}).Where("report_key IN ?", dsIDs).Count(&imported).Error; err != nil {
+			return 0, err
+		}
+		if imported != int64(len(dsIDs)) {
+			return 0, fmt.Errorf("billing report import is still in progress; retry log cleanup later")
+		}
+	}
+	result := LOG_DB.WithContext(ctx).Where("id IN ?", ids).Delete(&Log{})
 	if nil != result.Error {
 		return 0, result.Error
 	}

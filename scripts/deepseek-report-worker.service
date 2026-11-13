@@ -1,0 +1,34 @@
+[Unit]
+Description=New API DeepSeek background billing reports
+After=network-online.target postgresql@17-main.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/data/app/new-api-ty/report-worker.env
+Environment=GOMAXPROCS=1
+Environment=GOMEMLIMIT=160MiB
+DynamicUser=yes
+BindReadOnlyPaths=/data/app/new-api-ty/bin/deepseek-report-worker:/opt/new-api-ty-deepseek-report-worker
+ExecStart=/opt/new-api-ty-deepseek-report-worker
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=10
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=25%
+MemoryHigh=192M
+MemoryMax=256M
+TasksMax=32
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=deepseek-report-worker
+LogRateLimitIntervalSec=60
+LogRateLimitBurst=10
+
+[Install]
+WantedBy=multi-user.target

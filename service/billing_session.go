@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -209,7 +210,7 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 	// ---- 1) 预扣令牌额度 ----
 	if effectiveQuota > 0 {
 		if err := PreConsumeTokenQuota(s.relayInfo, effectiveQuota); err != nil {
-			return types.NewErrorWithStatusCode(err, types.ErrorCodePreConsumeTokenQuotaFailed, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+			return tokenPreconsumeError(err)
 		}
 		s.tokenConsumed = effectiveQuota
 	}
@@ -225,6 +226,9 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 			s.tokenConsumed = 0
 		}
 		// TODO: model 层应定义哨兵错误（如 ErrNoActiveSubscription），用 errors.Is 替代字符串匹配
+		if model.IsTransientDatabaseError(err) || errors.Is(err, context.DeadlineExceeded) {
+			return types.NewErrorWithStatusCode(err, types.ErrorCodeUpdateDataError, http.StatusServiceUnavailable, types.ErrOptionWithSkipRetry())
+		}
 		if errors.Is(err, model.ErrDepartmentQuotaUnavailable) {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeInsufficientUserQuota, http.StatusForbidden, types.ErrOptionWithSkipRetry())
 		}
@@ -313,9 +317,20 @@ func (s *BillingSession) reserveToken(delta int) error {
 		return nil
 	}
 	if err := PreConsumeTokenQuota(s.relayInfo, delta); err != nil {
-		return types.NewErrorWithStatusCode(err, types.ErrorCodePreConsumeTokenQuotaFailed, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+		return tokenPreconsumeError(err)
 	}
 	return nil
+}
+
+func tokenPreconsumeError(err error) *types.NewAPIError {
+	if errors.Is(err, ErrInsufficientTokenQuota) {
+		return types.NewErrorWithStatusCode(err, types.ErrorCodePreConsumeTokenQuotaFailed, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
+	}
+	status := http.StatusInternalServerError
+	if model.IsTransientDatabaseError(err) || errors.Is(err, context.DeadlineExceeded) {
+		status = http.StatusServiceUnavailable
+	}
+	return types.NewErrorWithStatusCode(err, types.ErrorCodeUpdateDataError, status, types.ErrOptionWithSkipRetry())
 }
 
 // shouldTrust 统一信任额度检查，适用于钱包和订阅。

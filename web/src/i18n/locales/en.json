@@ -5549,5 +5549,11 @@
     "Attached image": "Attached image",
     "Private knowledge base": "Private knowledge base",
     "Collapse": "Collapse",
-    "Expand": "Expand"
+    "Expand": "Expand",
+    "Background billing reports are not configured yet. No live log scan will be started.": "Background billing reports are not configured yet. No live log scan will be started.",
+    "Billing history is being prepared in the background. AI requests do not wait for it.": "Billing history is being prepared in the background. AI requests do not wait for it.",
+    "Approximate history preparation progress": "Approximate history preparation progress",
+    "Background reporting is paused. Showing the last generated bill.": "Background reporting is paused. Showing the last generated bill.",
+    "Bills are generated in the background and may be delayed. Refresh only reads generated results.": "Bills are generated in the background and may be delayed. Refresh only reads generated results.",
+    "Report updated at": "Report updated at"
 }

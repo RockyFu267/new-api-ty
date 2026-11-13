@@ -5549,5 +5549,11 @@
     "Attached image": "附加图片",
     "Private knowledge base": "私有知识库",
     "Collapse": "收起",
-    "Expand": "展开"
+    "Expand": "展开",
+    "Background billing reports are not configured yet. No live log scan will be started.": "背景帳單服務尚未設定，不會臨時掃描呼叫紀錄。",
+    "Billing history is being prepared in the background. AI requests do not wait for it.": "正在背景產生歷史帳單，AI 呼叫無需等待報表產生。",
+    "Approximate history preparation progress": "歷史帳單準備進度（約）",
+    "Background reporting is paused. Showing the last generated bill.": "背景統計暫未更新，目前顯示上次已產生的帳單。",
+    "Bills are generated in the background and may be delayed. Refresh only reads generated results.": "帳單由背景定時產生，可能有延遲；重新整理僅查詢已產生的結果。",
+    "Report updated at": "統計更新時間"
 }

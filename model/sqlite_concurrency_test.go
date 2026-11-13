@@ -27,7 +27,7 @@ func departmentFileDatabase(t *testing.T) *gorm.DB {
 	previous := DB
 	DB = db
 	t.Cleanup(func() { DB = previous; require.NoError(t, pool.Close()) })
-	require.NoError(t, db.AutoMigrate(&User{}, &Department{}, &UserDepartment{}, &DepartmentQuotaRule{}, &DepartmentQuotaCharge{}))
+	require.NoError(t, db.AutoMigrate(&User{}, &Department{}, &UserDepartment{}, &DepartmentQuotaRule{}, &DepartmentQuotaCharge{}, &DepartmentQuotaCounter{}))
 	require.NoError(t, db.Create(&User{Id: 1, Username: "parallel", Quota: 0}).Error)
 	require.NoError(t, db.Create(&Department{Id: 1, Name: "Research"}).Error)
 	require.NoError(t, db.Create(&UserDepartment{UserId: 1, DepartmentId: 1}).Error)

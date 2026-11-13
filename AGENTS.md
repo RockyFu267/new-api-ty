@@ -2,6 +2,14 @@
 
 DO NOT send optional commentary
 
+## Permanent environment boundary (user confirmed 2026-11-13)
+
+- Local gateway development and functional validation use the isolated PostgreSQL test database `new_api_ty_test_20261113` and report database `new_api_ty_test_reports_20261113`, reached through the loopback SSH tunnel on `127.0.0.1:55433`. Local test gateway URL: `http://127.0.0.1:53010`.
+- The gateway on `192.168.47.33:53000` uses the production database `new_api_ty`. Never point a local gateway or test worker at this production database, or point the production gateway at a test database.
+- Production data may be copied into test only when authorized. Test changes must never be copied back into production. Large load tests use the separately isolated local PostgreSQL environment, not the production PostgreSQL instance.
+- Pushes to the code repository do not authorize deployment to 47.33. Keep passwords, DSNs containing credentials, database dumps, local `.deployment` settings and raw usage exports out of Git.
+- Current local connection, startup and verification records: `requirements/postgresql/remote-test-copy-20261113.md`. Credentials and active-environment pointers are in the repository's parent `.deployment` directory; do not print them in logs or commit them.
+
 ## Overview
 
 This is an AI API gateway/proxy built with Go. It aggregates 40+ upstream AI providers (OpenAI, Claude, Gemini, Azure, AWS Bedrock, etc.) behind a unified API, with user management, billing, rate limiting, and an admin dashboard.

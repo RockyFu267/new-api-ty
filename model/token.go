@@ -395,13 +395,15 @@ func IncreaseTokenQuota(tokenId int, key string, quota int) (err error) {
 }
 
 func increaseTokenQuota(id int, quota int) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota + ?", quota),
-			"used_quota":    gorm.Expr("used_quota - ?", quota),
-			"accessed_time": common.GetTimestamp(),
-		},
-	).Error
+	err = retryDatabaseWrite(DB, func() error {
+		return DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota + ?", quota),
+				"used_quota":    gorm.Expr("used_quota - ?", quota),
+				"accessed_time": common.GetTimestamp(),
+			},
+		).Error
+	})
 	return err
 }
 
@@ -424,13 +426,15 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 }
 
 func decreaseTokenQuota(id int, quota int) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
-		map[string]interface{}{
-			"remain_quota":  gorm.Expr("remain_quota - ?", quota),
-			"used_quota":    gorm.Expr("used_quota + ?", quota),
-			"accessed_time": common.GetTimestamp(),
-		},
-	).Error
+	err = retryDatabaseWrite(DB, func() error {
+		return DB.Model(&Token{}).Where("id = ?", id).Updates(
+			map[string]interface{}{
+				"remain_quota":  gorm.Expr("remain_quota - ?", quota),
+				"used_quota":    gorm.Expr("used_quota + ?", quota),
+				"accessed_time": common.GetTimestamp(),
+			},
+		).Error
+	})
 	return err
 }
 

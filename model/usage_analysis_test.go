@@ -72,6 +72,38 @@ func TestUsageAnalysisTokenNormalization(t *testing.T) {
 	}
 }
 
+func TestUsageAnalysisBatchBoundaryPreservesCommittedTotalsOnRetry(t *testing.T) {
+	setupUsageAnalysisTest(t)
+	require.NoError(t, InitUsageAnalysis())
+	row := UsageAnalysisDaily{Day: "2026-11-12", UserID: 1, Username: "agent", Model: "deepseek", DepartmentID: 1, Source: "measured", UsageAnalysisTotals: UsageAnalysisTotals{Requests: 1, Input: 100, Output: 10, CacheRead: 90, Measured: 1}}
+	payload, err := common.Marshal(row)
+	require.NoError(t, err)
+	// 501 records deliberately cross the worker's 500-event transaction boundary.
+	events := make([]UsageAnalysisEvent, 501)
+	for i := range events {
+		events[i].Payload = string(payload)
+	}
+	require.NoError(t, DB.CreateInBatches(events, 100).Error)
+	bad := UsageAnalysisEvent{Payload: "invalid-json"}
+	require.NoError(t, DB.Create(&bad).Error)
+	require.NoError(t, SyncUsageAnalysis())
+	require.Error(t, SyncUsageAnalysis())
+	var stored UsageAnalysisDaily
+	require.NoError(t, DB.First(&stored).Error)
+	assert.Equal(t, int64(500), stored.Requests)
+	assert.Equal(t, int64(50000), stored.Input)
+	var pending int64
+	require.NoError(t, DB.Model(&UsageAnalysisEvent{}).Count(&pending).Error)
+	assert.Equal(t, int64(2), pending)
+	require.NoError(t, DB.Delete(&bad).Error)
+	require.NoError(t, SyncUsageAnalysis())
+	require.NoError(t, SyncUsageAnalysis())
+	require.NoError(t, DB.First(&stored).Error)
+	assert.Equal(t, UsageAnalysisTotals{Requests: 501, Input: 50100, Output: 5010, CacheRead: 45090, Measured: 501}, stored.UsageAnalysisTotals)
+	require.NoError(t, DB.Model(&UsageAnalysisEvent{}).Count(&pending).Error)
+	assert.Zero(t, pending)
+}
+
 func TestUsageAnalysisFiltersCombineAndCurrentDepartmentsDoNotRewriteHistory(t *testing.T) {
 	setupUsageAnalysisTest(t)
 	require.NoError(t, InitUsageAnalysis())

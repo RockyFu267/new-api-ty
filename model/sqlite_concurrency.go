@@ -1,11 +1,9 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -38,26 +36,5 @@ func sqliteConnectionDSN(path string) (string, error) {
 // an obsolete quota snapshot. Callbacks must only perform transactional DB work.
 // Other databases retain their normal row-locking transaction behavior.
 func quotaWriteTransaction(db *gorm.DB, fn func(*gorm.DB) error) error {
-	attempts := 1
-	if db.Dialector.Name() == "sqlite" {
-		attempts = 6
-	}
-	for attempt := 0; attempt < attempts; attempt++ {
-		err := db.Transaction(fn)
-		if err == nil {
-			return nil
-		}
-		var sqliteErr interface{ Code() int }
-		if !errors.As(err, &sqliteErr) || (sqliteErr.Code()&255 != 5 && sqliteErr.Code()&255 != 6) || attempt+1 == attempts {
-			return err
-		}
-		timer := time.NewTimer(time.Duration(10*(1<<attempt)) * time.Millisecond)
-		select {
-		case <-db.Statement.Context.Done():
-			timer.Stop()
-			return db.Statement.Context.Err()
-		case <-timer.C:
-		}
-	}
-	return nil
+	return retryDatabaseWrite(db, func() error { return db.Transaction(fn) })
 }

@@ -10,29 +10,37 @@ import (
 	"gorm.io/gorm/utils/tests"
 )
 
+type lockTestDialect struct {
+	tests.DummyDialector
+	dialect string
+}
+
+func (d lockTestDialect) Name() string { return d.dialect }
+
 // lockForUpdate must emit FOR UPDATE on databases that support it and skip
 // it on SQLite, where the syntax does not exist.
 //
 // The dummy dialector is used because SQLite drivers strip locking clauses
 // from the generated SQL, which would mask what the helper itself does.
 func TestLockForUpdateEmitsRowLock(t *testing.T) {
-	dummyDB, err := gorm.Open(tests.DummyDialector{}, &gorm.Config{DryRun: true})
-	require.NoError(t, err)
-	buildSQL := func() string {
-		var rows []Redemption
-		return lockForUpdate(dummyDB).Where("id = ?", 1).Find(&rows).Statement.SQL.String()
+	old := common.MainDatabaseType()
+	t.Cleanup(func() { common.SetMainDatabaseType(old) })
+	for _, dialect := range []string{"mysql", "postgres", "sqlite"} {
+		t.Run(dialect, func(t *testing.T) {
+			// A report DB may differ from the primary engine in the same process.
+			common.SetMainDatabaseType(common.DatabaseTypePostgreSQL)
+			if dialect != "sqlite" {
+				common.SetMainDatabaseType(common.DatabaseTypeSQLite)
+			}
+			db, err := gorm.Open(lockTestDialect{dialect: dialect}, &gorm.Config{DryRun: true})
+			require.NoError(t, err)
+			var rows []Redemption
+			sql := lockForUpdate(db).Where("id = ?", 1).Find(&rows).Statement.SQL.String()
+			if dialect == "sqlite" {
+				assert.NotContains(t, sql, "FOR UPDATE")
+			} else {
+				assert.Contains(t, sql, "FOR UPDATE")
+			}
+		})
 	}
-
-	t.Cleanup(func() {
-		common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
-	})
-
-	common.SetDatabaseTypes(common.DatabaseTypeMySQL, common.DatabaseTypeSQLite)
-	assert.Contains(t, buildSQL(), "FOR UPDATE")
-
-	common.SetDatabaseTypes(common.DatabaseTypePostgreSQL, common.DatabaseTypeSQLite)
-	assert.Contains(t, buildSQL(), "FOR UPDATE")
-
-	common.SetDatabaseTypes(common.DatabaseTypeSQLite, common.DatabaseTypeSQLite)
-	assert.NotContains(t, buildSQL(), "FOR UPDATE")
 }

@@ -324,6 +324,9 @@ func InitResources() error {
 		}
 	}
 	model.InitOptionMap()
+	if reportErr := model.InitDeepSeekReportReader(); reportErr != nil {
+		common.SysError("DeepSeek reporting unavailable: " + reportErr.Error())
+	}
 
 	// 清理旧的磁盘缓存文件
 	common.CleanupOldCacheFiles()

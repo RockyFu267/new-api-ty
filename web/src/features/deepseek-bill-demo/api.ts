@@ -14,6 +14,7 @@ export type Totals = {
 }
 export type BillUser = Totals & { user_id: number; username: string }
 export type Detail = {
+  report_key?: string
   actual?: {
     snapshot: {
       rule: { version: number; fx: number }
@@ -38,6 +39,15 @@ export type Detail = {
   unpriced: boolean
 }
 export type Report = {
+  status?: {
+    configured: boolean
+    history_complete: boolean
+    worker_running: boolean
+    last_sync: number
+    imported_through: number
+    source_through: number
+  }
+  next_cursor?: string
   model: string
   snapshot: string
   totals: Totals
@@ -47,6 +57,7 @@ export type Report = {
   page: number
 }
 export type Filters = {
+  cursor?: string
   start: string
   end: string
   user_id: string

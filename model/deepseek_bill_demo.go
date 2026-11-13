@@ -1,9 +1,12 @@
 package model
 
 import (
+	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"math"
-	"sort"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -32,6 +35,7 @@ type DeepSeekDemoUser struct {
 	DeepSeekDemoTotals
 }
 type DeepSeekDemoDetail struct {
+	ReportKey  string     `json:"report_key,omitempty"`
 	ID         int        `json:"id"`
 	RequestID  string     `json:"request_id"`
 	UserID     int        `json:"user_id"`
@@ -55,6 +59,8 @@ type DeepSeekDemoReport struct {
 	Details     []DeepSeekDemoDetail `json:"details"`
 	DetailTotal int                  `json:"detail_total"`
 	Page        int                  `json:"page"`
+	NextCursor  string               `json:"next_cursor,omitempty"`
+	Status      DeepSeekReportStatus `json:"status"`
 }
 
 func deepSeekDemoPeak(at time.Time) bool {
@@ -146,99 +152,118 @@ func deepSeekDemoDetail(log Log) DeepSeekDemoDetail {
 	return detail
 }
 
+var deepSeekReportSlots = make(chan struct{}, 2)
+var ErrDeepSeekReportBusy = errors.New("billing report is busy; retry later")
+var ErrInvalidDeepSeekReportQuery = errors.New("invalid billing report query")
+
+type deepSeekReportCursor struct {
+	Time int64  `json:"time"`
+	ID   int64  `json:"id"`
+	Key  string `json:"key"`
+}
+
 func GetDeepSeekDemoReport(startDay, endDay string, userID, page int) (*DeepSeekDemoReport, error) {
-	return getDeepSeekDemoReport(startDay, endDay, userID, page, false)
+	return ReadDeepSeekReport(context.Background(), startDay, endDay, userID, page, false, "")
 }
-
 func GetDeepSeekSelfDemoReport(startDay, endDay string, userID, page int) (*DeepSeekDemoReport, error) {
-	if userID <= 0 {
-		return nil, fmt.Errorf("invalid user")
-	}
-	return getDeepSeekDemoReport(startDay, endDay, userID, page, true)
+	return ReadDeepSeekReport(context.Background(), startDay, endDay, userID, page, true, "")
 }
 
-func getDeepSeekDemoReport(startDay, endDay string, userID, page int, selfOnly bool) (*DeepSeekDemoReport, error) {
+// ReadDeepSeekReport reads only precomputed data from the reporting pool. It
+// never starts a worker, scans raw logs, reprices history, or changes balances.
+func ReadDeepSeekReport(ctx context.Context, startDay, endDay string, userID, page int, selfOnly bool, cursor string) (*DeepSeekDemoReport, error) {
 	start, err := time.ParseInLocation("2006-01-02", startDay, UsageAnalysisLocation)
 	if err != nil {
-		return nil, fmt.Errorf("invalid start date")
+		return nil, fmt.Errorf("%w: invalid start date", ErrInvalidDeepSeekReportQuery)
 	}
 	end, err := time.ParseInLocation("2006-01-02", endDay, UsageAnalysisLocation)
-	if err != nil || end.Before(start) || end.Sub(start) > 89*24*time.Hour || startDay < "2026-08-17" || endDay > time.Now().In(UsageAnalysisLocation).Format("2006-01-02") || userID < 0 || page < 1 || page > 100000 {
-		return nil, fmt.Errorf("select up to 90 days since 2026-08-17, not future dates")
+	if err != nil || end.Before(start) || end.Sub(start) > 89*24*time.Hour || startDay < "2026-08-17" || endDay > time.Now().In(UsageAnalysisLocation).Format("2006-01-02") || userID < 0 || page < 1 || (selfOnly && userID <= 0) {
+		return nil, fmt.Errorf("%w: select up to 90 days since 2026-08-17, not future dates", ErrInvalidDeepSeekReportQuery)
 	}
 	end = end.AddDate(0, 0, 1)
-	var logs []Log
-	// Logs carry completion time. Include one extra day, then filter by the
-	// request timestamp, so a conversation crossing midnight isn't misclassified.
-	query := LOG_DB.Model(&Log{}).Select("id, user_id, username, created_at, prompt_tokens, completion_tokens, other, request_id, model_name").Where("type = ? AND model_name = ? AND created_at >= ? AND created_at < ?", LogTypeConsume, DeepSeekDemoModel, start.Unix(), end.AddDate(0, 0, 1).Unix())
-	if selfOnly {
-		query = query.Where("user_id = ?", userID)
-	}
-	err = query.Order("id DESC").Limit(200001).Find(&logs).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(logs) > 200000 {
-		return nil, fmt.Errorf("too many records; select a shorter date range")
+	var after deepSeekReportCursor
+	if cursor != "" {
+		if len(cursor) > 1024 {
+			return nil, fmt.Errorf("%w: invalid report cursor", ErrInvalidDeepSeekReportQuery)
+		}
+		data, e := base64.RawURLEncoding.DecodeString(cursor)
+		if e != nil || common.Unmarshal(data, &after) != nil || after.ID <= 0 || len(after.Key) == 0 || len(after.Key) > 191 || after.Time < start.Unix() || after.Time >= end.Unix() {
+			return nil, fmt.Errorf("%w: invalid report cursor", ErrInvalidDeepSeekReportQuery)
+		}
+	} else if page > 1 {
+		return nil, fmt.Errorf("%w: use the next-page cursor instead of an offset", ErrInvalidDeepSeekReportQuery)
 	}
 	report := &DeepSeekDemoReport{Model: DeepSeekDemoModel, Snapshot: "2026-11-09", Users: []DeepSeekDemoUser{}, Details: []DeepSeekDemoDetail{}, Page: page}
-	users := map[int]*DeepSeekDemoUser{}
-	details := []DeepSeekDemoDetail{}
-	for _, log := range logs {
-		detail := deepSeekDemoDetail(log)
-		if detail.Time < start.Unix() || detail.Time >= end.Unix() {
-			continue
-		}
-		user := users[log.UserId]
-		if user == nil {
-			user = &DeepSeekDemoUser{UserID: log.UserId, Username: log.Username}
-			users[log.UserId] = user
-		}
-		for _, total := range []*DeepSeekDemoTotals{&user.DeepSeekDemoTotals, &report.Totals} {
-			if detail.Actual != nil {
-				total.Actual++
-				total.ActualQuota += int64(detail.Actual.Quota)
-			}
-			total.Requests++
-			total.Input += detail.Input
-			total.Output += detail.Output
-			total.CacheRead += detail.CacheRead
-			if detail.Peak {
-				total.PeakUnits += detail.CostUnits
-			} else {
-				total.OffPeakUnits += detail.CostUnits
-			}
-			if detail.Estimated {
-				total.Estimated++
-			}
-			if detail.Unpriced {
-				total.Unpriced++
-			}
-		}
-		if userID == 0 || userID == log.UserId {
-			details = append(details, detail)
-		}
+	if DeepSeekReportDB == nil {
+		report.Status.Configured = DeepSeekReportingConfigured()
+		return report, nil
 	}
-	for _, user := range users {
-		report.Users = append(report.Users, *user)
+	select {
+	case deepSeekReportSlots <- struct{}{}:
+		defer func() { <-deepSeekReportSlots }()
+	default:
+		return nil, ErrDeepSeekReportBusy
 	}
-	sort.Slice(report.Users, func(i, j int) bool {
-		a, b := report.Users[i], report.Users[j]
-		if a.PeakUnits+a.OffPeakUnits == b.PeakUnits+b.OffPeakUnits {
-			return a.UserID < b.UserID
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	err = reportReadTransaction(ctx, func(tx *gorm.DB) error {
+		status, err := readDeepSeekReportStatus(tx, time.Now())
+		if err != nil {
+			return err
 		}
-		return a.PeakUnits+a.OffPeakUnits > b.PeakUnits+b.OffPeakUnits
+		report.Status = status
+		if status.LastSync == 0 || !status.HistoryComplete {
+			return nil
+		}
+		query := tx.Model(&DeepSeekBillDaily{}).Where("day >= ? AND day <= ?", startDay, endDay)
+		if selfOnly {
+			query = query.Where("user_id = ?", userID)
+		}
+		fields := "user_id, MAX(username) AS username"
+		for _, column := range []string{"requests", "input", "output", "cache_read", "peak_units", "off_peak_units", "estimated", "unpriced", "actual", "actual_quota"} {
+			quoted := tx.Statement.Quote(column)
+			fields += ", COALESCE(SUM(" + quoted + "),0) AS " + quoted
+		}
+		if err := query.Select(fields).Group("user_id").Order("SUM(peak_units) + SUM(off_peak_units) DESC").Order("user_id ASC").Scan(&report.Users).Error; err != nil {
+			return err
+		}
+		for _, user := range report.Users {
+			report.Totals.add(user.DeepSeekDemoTotals)
+			if userID == 0 || user.UserID == userID {
+				report.DetailTotal += int(user.Requests)
+			}
+		}
+		facts := tx.Model(&DeepSeekBillFact{}).Where("time >= ? AND time < ?", start.Unix(), end.Unix())
+		if selfOnly || userID > 0 {
+			facts = facts.Where("user_id = ?", userID)
+		}
+		if cursor != "" {
+			// A row comparison lets PostgreSQL seek directly into the composite
+			// index. An OR expansion can scan every newer row on deep pages.
+			// The explicit time bound also helps MySQL's range optimizer.
+			facts = facts.Where("time <= ?", after.Time).
+				Where("(time, log_id, report_key) < (?, ?, ?)", after.Time, after.ID, after.Key)
+		}
+		var rows []DeepSeekBillFact
+		if err := facts.Order("time DESC").Order("log_id DESC").Order("report_key DESC").Limit(51).Find(&rows).Error; err != nil {
+			return err
+		}
+		for _, row := range rows[:min(len(rows), 50)] {
+			var detail DeepSeekDemoDetail
+			if err := common.UnmarshalJsonStr(row.Payload, &detail); err != nil {
+				return err
+			}
+			report.Details = append(report.Details, detail)
+		}
+		if len(rows) > 50 {
+			last := rows[49]
+			data, err := common.Marshal(deepSeekReportCursor{Time: last.Time, ID: last.LogID, Key: last.ReportKey})
+			if err != nil {
+				return err
+			}
+			report.NextCursor = base64.RawURLEncoding.EncodeToString(data)
+		}
+		return nil
 	})
-	sort.Slice(details, func(i, j int) bool {
-		if details[i].Time == details[j].Time {
-			return details[i].ID > details[j].ID
-		}
-		return details[i].Time > details[j].Time
-	})
-	report.DetailTotal = len(details)
-	offset := (page - 1) * 50
-	if offset < len(details) {
-		report.Details = details[offset:min(offset+50, len(details))]
-	}
-	return report, nil
+	return report, err
 }

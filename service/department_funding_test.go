@@ -14,9 +14,10 @@ import (
 
 func TestEnterpriseBillingUsesQuotaBeforeWalletAndFallsBackWithoutMixing(t *testing.T) {
 	truncate(t)
-	require.NoError(t, model.DB.AutoMigrate(&model.Department{}, &model.UserDepartment{}, &model.DepartmentQuotaRule{}, &model.DepartmentQuotaCharge{}))
+	require.NoError(t, model.DB.AutoMigrate(&model.Department{}, &model.UserDepartment{}, &model.DepartmentQuotaRule{}, &model.DepartmentQuotaCharge{}, &model.DepartmentQuotaCounter{}))
 	t.Cleanup(func() {
 		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaCharge{})
+		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaCounter{})
 		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaRule{})
 		model.DB.Where("1 = 1").Delete(&model.UserDepartment{})
 		model.DB.Where("1 = 1").Delete(&model.Department{})
@@ -59,9 +60,10 @@ func TestEnterpriseBillingUsesQuotaBeforeWalletAndFallsBackWithoutMixing(t *test
 
 func TestEnterpriseAPIRequestSettlesTokenBudgetOnceAcrossWalletFallback(t *testing.T) {
 	truncate(t)
-	require.NoError(t, model.DB.AutoMigrate(&model.Department{}, &model.UserDepartment{}, &model.DepartmentQuotaRule{}, &model.DepartmentQuotaCharge{}))
+	require.NoError(t, model.DB.AutoMigrate(&model.Department{}, &model.UserDepartment{}, &model.DepartmentQuotaRule{}, &model.DepartmentQuotaCharge{}, &model.DepartmentQuotaCounter{}))
 	t.Cleanup(func() {
 		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaCharge{})
+		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaCounter{})
 		model.DB.Where("1 = 1").Delete(&model.DepartmentQuotaRule{})
 		model.DB.Where("1 = 1").Delete(&model.UserDepartment{})
 		model.DB.Where("1 = 1").Delete(&model.Department{})

@@ -183,15 +183,23 @@ func QueueUsageAnalysis(c *gin.Context, userID int, params RecordConsumeLogParam
 	if err != nil {
 		return err
 	}
-	return DB.Create(&UsageAnalysisEvent{Payload: string(payload)}).Error
+	return retryDatabaseWrite(DB, func() error { return DB.Create(&UsageAnalysisEvent{Payload: string(payload)}).Error })
+}
+
+func usageAnalysisKey(row UsageAnalysisDaily) (string, error) {
+	identity, err := common.Marshal([]interface{}{row.Day, row.UserID, row.Username, row.DepartmentID, row.Department, row.Model, row.Source})
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", sha256.Sum256(identity)), nil
 }
 
 func mergeUsageAnalysis(tx *gorm.DB, row UsageAnalysisDaily) error {
-	identity, err := common.Marshal([]interface{}{row.Day, row.UserID, row.Username, row.DepartmentID, row.Department, row.Model, row.Source})
+	var err error
+	row.Key, err = usageAnalysisKey(row)
 	if err != nil {
 		return err
 	}
-	row.Key = fmt.Sprintf("%x", sha256.Sum256(identity))
 	updates := map[string]interface{}{}
 	values := map[string]int64{"requests": row.Requests, "input": row.Input, "output": row.Output, "cache_read": row.CacheRead, "cache_write": row.CacheWrite, "cache_reported": row.CacheReported, "measured": row.Measured, "estimated": row.Estimated, "unknown": row.Unknown}
 	for column, value := range values {
@@ -203,19 +211,39 @@ func mergeUsageAnalysis(tx *gorm.DB, row UsageAnalysisDaily) error {
 
 // Checkpoint, aggregate updates and queue removal commit together. Retrying is safe.
 func SyncUsageAnalysis() error {
+	_, err := syncUsageAnalysis()
+	return err
+}
+
+func syncUsageAnalysis() (bool, error) {
 	usageAnalysisSync.Lock()
 	defer usageAnalysisSync.Unlock()
 	var before UsageAnalysisState
 	if err := DB.First(&before, 1).Error; err != nil {
-		return err
+		return false, err
 	}
 	var history []Log
 	if before.Imported < before.ImportThrough {
 		if err := LOG_DB.Where("id > ? AND id <= ?", before.Imported, before.ImportThrough).Order("id ASC").Limit(500).Find(&history).Error; err != nil {
-			return err
+			return false, err
 		}
 	}
-	return quotaWriteTransaction(DB, func(tx *gorm.DB) error {
+	more := false
+	err := quotaWriteTransaction(DB, func(tx *gorm.DB) error {
+		merged := make(map[string]UsageAnalysisDaily)
+		add := func(row UsageAnalysisDaily) error {
+			key, err := usageAnalysisKey(row)
+			if err != nil {
+				return err
+			}
+			if prior, ok := merged[key]; ok {
+				prior.UsageAnalysisTotals.Add(row.UsageAnalysisTotals)
+				merged[key] = prior
+			} else {
+				merged[key] = row
+			}
+			return nil
+		}
 		var state UsageAnalysisState
 		if err := lockForUpdate(tx).First(&state, 1).Error; err != nil {
 			return err
@@ -227,7 +255,7 @@ func SyncUsageAnalysis() error {
 					other := map[string]interface{}{}
 					_ = common.UnmarshalJsonStr(log.Other, &other)
 					row := usageAnalysisRow(log.UserId, log.Username, log.ModelName, log.CreatedAt, log.PromptTokens, log.CompletionTokens, other)
-					if err := mergeUsageAnalysis(tx, row); err != nil {
+					if err := add(row); err != nil {
 						return err
 					}
 				}
@@ -241,29 +269,43 @@ func SyncUsageAnalysis() error {
 		if err := tx.Order("id ASC").Limit(500).Find(&events).Error; err != nil {
 			return err
 		}
+		ids := make([]int64, 0, len(events))
 		for _, event := range events {
 			var row UsageAnalysisDaily
 			if err := common.UnmarshalJsonStr(event.Payload, &row); err != nil {
 				return err
 			}
+			if err := add(row); err != nil {
+				return err
+			}
+			ids = append(ids, event.ID)
+		}
+		for _, row := range merged {
 			if err := mergeUsageAnalysis(tx, row); err != nil {
 				return err
 			}
-			if err := tx.Delete(&event).Error; err != nil {
+		}
+		if len(ids) > 0 {
+			if err := tx.Delete(&UsageAnalysisEvent{}, ids).Error; err != nil {
 				return err
 			}
 		}
+		more = state.Imported < state.ImportThrough || len(events) == 500
 		state.LastSync = time.Now().Unix()
 		return tx.Save(&state).Error
 	})
+	return more, err
 }
 
 func RunUsageAnalysis() {
 	for {
-		if err := SyncUsageAnalysis(); err != nil {
+		more, err := syncUsageAnalysis()
+		if err != nil {
 			common.SysError("usage analysis aggregation: " + err.Error())
 		}
-		time.Sleep(5 * time.Second)
+		if err != nil || !more {
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 

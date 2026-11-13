@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 import { getBill, millions, yuan, type Filters } from './api'
 import { BillDetails, BillUsers } from './bill-tables'
+import { BillingReportStatus } from './report-status'
 import { DeepSeekRules } from './rules'
 
 export function DeepSeekBillDemo() {
@@ -28,10 +29,19 @@ export function DeepSeekBillDemo() {
   }
   const [draft, setDraft] = useState(initial)
   const [filters, setFilters] = useState<Filters>(initial)
+  const [pageCursors, setPageCursors] = useState<Record<number, string>>({})
   const query = useQuery({
     queryKey: ['deepseek-bill-demo', user?.id, isAdmin, filters],
     queryFn: () => getBill(filters),
     retry: false,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: (query) =>
+      query.state.data?.status?.configured &&
+      query.state.data.status.worker_running &&
+      !query.state.data.status.history_complete
+        ? 10_000
+        : false,
   })
   const data = query.data
   const chosen = data?.users.find(
@@ -71,6 +81,7 @@ export function DeepSeekBillDemo() {
         onSubmit={(event) => {
           event.preventDefault()
           setFilters({ ...draft, user_id: initial.user_id, page: 1 })
+          setPageCursors({})
         }}
       >
         <label className='space-y-1 text-sm'>
@@ -134,7 +145,8 @@ export function DeepSeekBillDemo() {
           {t('Unable to load bill')}: {query.error.message}
         </p>
       )}
-      {data && (
+      <BillingReportStatus status={data?.status} />
+      {data && (data.status?.history_complete ?? true) && (
         <>
           <h2 className='text-lg font-semibold'>
             {chosen?.username ?? (isAdmin ? t('All users') : user?.username)} ·{' '}
@@ -177,9 +189,15 @@ export function DeepSeekBillDemo() {
               <BillUsers
                 report={data}
                 selected={filters.user_id}
-                onSelect={(id) =>
-                  setFilters({ ...filters, user_id: id, page: 1 })
-                }
+                onSelect={(id) => {
+                  setPageCursors({})
+                  setFilters({
+                    ...filters,
+                    user_id: id,
+                    page: 1,
+                    cursor: undefined,
+                  })
+                }}
               />
               <div className='flex flex-wrap items-center gap-3'>
                 <label className='text-sm' htmlFor='bill-user'>
@@ -189,13 +207,15 @@ export function DeepSeekBillDemo() {
                   id='bill-user'
                   className='bg-background rounded-md border p-2 text-sm'
                   value={filters.user_id}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    setPageCursors({})
                     setFilters({
                       ...filters,
                       user_id: event.target.value,
                       page: 1,
+                      cursor: undefined,
                     })
-                  }
+                  }}
                 >
                   <option value='0'>{t('All users')}</option>
                   {data.users.map((user) => (
@@ -210,7 +230,18 @@ export function DeepSeekBillDemo() {
           <BillDetails
             report={data}
             page={filters.page}
-            onPage={(page) => setFilters({ ...filters, page })}
+            loading={query.isFetching}
+            onPage={(page) => {
+              const cursor =
+                page > filters.page ? data.next_cursor : pageCursors[page]
+              if (page > 1 && !cursor) return
+              setPageCursors({
+                ...pageCursors,
+                [filters.page]: filters.cursor ?? '',
+                [page]: cursor ?? '',
+              })
+              setFilters({ ...filters, page, cursor: cursor || undefined })
+            }}
           />
         </>
       )}

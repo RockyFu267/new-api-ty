@@ -8,15 +8,17 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func setupDepartmentQuotaTest(t *testing.T) int {
 	t.Helper()
 	truncateTables(t)
-	require.NoError(t, DB.AutoMigrate(&Department{}, &UserDepartment{}, &DepartmentQuotaRule{}, &DepartmentQuotaCharge{}))
+	require.NoError(t, DB.AutoMigrate(&Department{}, &UserDepartment{}, &DepartmentQuotaRule{}, &DepartmentQuotaCharge{}, &DepartmentQuotaCounter{}))
 	t.Cleanup(func() {
 		DB.Where("1 = 1").Delete(&DepartmentQuotaCharge{})
+		DB.Where("1 = 1").Delete(&DepartmentQuotaCounter{})
 		DB.Where("1 = 1").Delete(&DepartmentQuotaRule{})
 		DB.Where("1 = 1").Delete(&UserDepartment{})
 		DB.Where("1 = 1").Delete(&Department{})
@@ -28,6 +30,31 @@ func setupDepartmentQuotaTest(t *testing.T) int {
 	require.NoError(t, AssignUserDepartment(2, department.Id))
 	require.NoError(t, SaveDepartmentQuotaRule(&DepartmentQuotaRule{DepartmentId: department.Id, Enabled: true, Daily: 100, Weekly: 150, Monthly: 180}))
 	return department.Id
+}
+
+func TestDepartmentQuotaMigratedReservationSeedsCountersAndRollsBackFailedSettlement(t *testing.T) {
+	setupDepartmentQuotaTest(t)
+	now := time.Date(2026, 9, 30, 23, 59, 0, 0, UsageAnalysisLocation)
+	// A pre-migration reservation has no derived counters yet.
+	charge := DepartmentQuotaCharge{RequestId: "legacy-reservation", UserId: 1, CreatedAt: now.Unix(), Amount: 40, Status: "reserved"}
+	require.NoError(t, DB.Create(&charge).Error)
+	require.NoError(t, ResizeDepartmentQuota(charge.RequestId, 60))
+	require.NoError(t, DB.Exec(`CREATE TRIGGER reject_quota_settlement BEFORE UPDATE ON department_quota_charges BEGIN SELECT RAISE(ABORT, 'injected settlement failure'); END`).Error)
+	t.Cleanup(func() { DB.Exec("DROP TRIGGER IF EXISTS reject_quota_settlement") })
+	require.ErrorContains(t, FinishDepartmentQuota(charge.RequestId, 50, false), "injected settlement failure")
+	usage, err := GetDepartmentQuotaUsage(1, now)
+	require.NoError(t, err)
+	assert.Zero(t, usage.Monthly.Used)
+	assert.Equal(t, int64(60), usage.Monthly.Reserved)
+	require.NoError(t, DB.Exec("DROP TRIGGER reject_quota_settlement").Error)
+	require.NoError(t, FinishDepartmentQuota(charge.RequestId, 50, false))
+	require.NoError(t, FinishDepartmentQuota(charge.RequestId, 50, false))
+	usage, err = GetDepartmentQuotaUsage(1, now.Add(2*time.Minute))
+	require.NoError(t, err)
+	assert.Zero(t, usage.Daily.Used)
+	assert.Zero(t, usage.Monthly.Used)
+	assert.Equal(t, int64(50), usage.Weekly.Used)
+	assert.Zero(t, usage.Weekly.Reserved)
 }
 
 func TestEnterpriseQuotaModeOptionUpdatesRuntimeConfiguration(t *testing.T) {
@@ -156,6 +183,19 @@ func TestDepartmentQuotaLateSettlementStaysInOriginalMonth(t *testing.T) {
 	require.Zero(t, usage.Daily.Used)
 	require.Zero(t, usage.Monthly.Used)
 	require.Equal(t, int64(60), usage.Weekly.Used)
+}
+
+func TestDepartmentQuotaInFlightCostSurvivesUserSoftDeletion(t *testing.T) {
+	setupDepartmentQuotaTest(t)
+	now := time.Now()
+	_, err := ReserveDepartmentQuota("deleted-in-flight", 1, "qwen", 40, now)
+	require.NoError(t, err)
+	require.NoError(t, DB.Delete(&User{}, 1).Error)
+	require.NoError(t, FinishDepartmentQuota("deleted-in-flight", 50, false))
+	var charge DepartmentQuotaCharge
+	require.NoError(t, DB.Where("request_id = ?", "deleted-in-flight").First(&charge).Error)
+	assert.Equal(t, "settled", charge.Status)
+	assert.Equal(t, int64(50), charge.Amount)
 }
 
 func TestDepartmentQuotaMonthlyExhaustionStillBlocksAfterThirdWeekReset(t *testing.T) {

@@ -1,0 +1,19 @@
+{
+  "snapshot_restored_and_healthy": true,
+  "elapsed_stop_restore_start_seconds": 4.49,
+  "sqlite_requests_at_checkpoint": 1,
+  "pg_trial_requests_abandoned": 3,
+  "pg_total_retained_for_inspection": 4,
+  "sqlite_requests_after_rollback_probe": 2,
+  "old_binary_restored": true,
+  "old_config_restored": true,
+  "corrupt_backup_refused_without_changes": true,
+  "running_service_restore_refused": true,
+  "wallet_token_ledger_log_reconciled": true,
+  "postgres_not_modified_by_rollback": true,
+  "production_untouched": true,
+  "scope": "Windows localhost test of committed baseline SQLite -> current PG -> saved baseline SQLite; not production timing SLA",
+  "windows_unit_tests_passed": true,
+  "linux_unit_tests_passed": true,
+  "linux_bash_syntax_passed": true
+}

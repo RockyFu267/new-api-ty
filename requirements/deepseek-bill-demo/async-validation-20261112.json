@@ -1,0 +1,228 @@
+{
+  "date": "2026-11-12",
+  "scope": "local implementation and isolation verification only; not deployed to 47.33",
+  "initial_dataset_requests": 187385,
+  "initial_response_seconds": 0.0196,
+  "previous_synchronous_seconds": 9.552,
+  "larger_dataset": {
+    "local_only_synthetic_scale_rows": 20000,
+    "total_requests": 211885,
+    "seconds": 0.0184,
+    "details_returned": 50,
+    "no_200000_record_limit": true
+  },
+  "concurrent_and_fault_tests": {
+    "historical_prices_and_totals_unchanged": true,
+    "baseline": {
+      "ai_requests": 1000,
+      "ai_statuses": {
+        "200": 1000
+      },
+      "ai_latency_ms": {
+        "p50": 265.87,
+        "p95": 971.35,
+        "p99": 1568.88
+      },
+      "ai_accounting_all_match": true,
+      "report_requests": 0,
+      "report_error_count": 0,
+      "report_errors": []
+    },
+    "concurrent_reports": {
+      "ai_requests": 1000,
+      "ai_statuses": {
+        "200": 1000
+      },
+      "ai_latency_ms": {
+        "p50": 191.73,
+        "p95": 297.68,
+        "p99": 324.27
+      },
+      "ai_accounting_all_match": true,
+      "report_requests": 105,
+      "report_error_count": 0,
+      "report_errors": [],
+      "report_latency_ms": {
+        "p50": 23.14,
+        "p95": 53.0,
+        "p99": 64.9
+      }
+    },
+    "report_database_unavailable": {
+      "ai_requests": 500,
+      "ai_statuses": {
+        "200": 500
+      },
+      "ai_latency_ms": {
+        "p50": 181.89,
+        "p95": 282.7,
+        "p99": 342.1
+      },
+      "ai_accounting_all_match": true,
+      "report_requests": 143,
+      "report_error_count": 143,
+      "report_errors": [
+        "{'message': 'Billing reports are temporarily unavailable. Try again later.', 'success': False}",
+        "{'message': 'Billing reports are temporarily unavailable. Try again later.', 'success': False}",
+        "{'message': 'Billing reports are temporarily unavailable. Try again later.', 'success': False}"
+      ],
+      "report_latency_ms": {
+        "p50": 10.39,
+        "p95": 34.77,
+        "p99": 50.81
+      }
+    },
+    "reporting_recovers_without_gateway_restart": true
+  },
+  "initial_backfill_with_ai": {
+    "ai_requests": 4000,
+    "ai_statuses": {
+      "200": 4000
+    },
+    "ai_latency_ms": {
+      "p50": 181.2,
+      "p95": 282.14,
+      "p99": 305.41
+    },
+    "all_accounting_checks_pass": true,
+    "historical_rows_generated_during_load": 139,
+    "source_role_readonly": true,
+    "worker_connections_per_db": 1,
+    "worker_batch": 200,
+    "worker_pause_seconds": 2
+  },
+  "linux_worker_limits": {
+    "cpu": 0.25,
+    "memory_mib": 256,
+    "pids_limit": 32,
+    "unprivileged_uid": 65534,
+    "read_only_filesystem": true,
+    "observed_memory_mib": 12.77,
+    "observed_tasks": 6,
+    "ran_successfully": true
+  },
+  "source_write_permission_denied": true,
+  "historical_reference_user_totals_unchanged": true,
+  "report_pool_connections": 2,
+  "source_worker_connections": 1,
+  "writer_connections": 1,
+  "report_deadline_seconds": 2,
+  "worker_batch_limit": 200,
+  "worker_pause_seconds": 2,
+  "real_provider_used_for_load": false,
+  "notes": [
+    "Cold/warm cache and host activity differ between runs; do not interpret latency differences as causation.",
+    "Source and reporting databases share a local PostgreSQL cluster; underlying hardware is not fully isolated.",
+    "Synthetic source rows include 20000 clearly labelled report-only scale fixtures, not real billing."
+  ],
+  "final_recovery_check": {
+    "gateway_healthy_while_report_database_offline": true,
+    "report_database_reenabled": true,
+    "report_recovered_without_gateway_restart": true,
+    "historical_totals_unchanged": true,
+    "worker_running": true
+  },
+  "second_review": {
+    "cold_start": {
+      "healthy_startup_seconds_with_reporting_offline": 2.832,
+      "ai_statuses": {
+        "200": 500
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      },
+      "latency_ms": {
+        "p50": 185.91,
+        "p95": 300.98,
+        "p99": 352.58
+      },
+      "report_recovered_without_gateway_restart": true
+    },
+    "report_lock_and_worker_stop": {
+      "report_table_locked": {
+        "ai_statuses": {
+          "200": 500
+        },
+        "accounting_checks": {
+          "all_requests_succeeded": true,
+          "user_request_count": true,
+          "ledger_request_count": true,
+          "consume_log_count": true,
+          "same_amount_user_token_channel_ledger_log": true,
+          "wallet_untouched": true,
+          "no_open_reservations": true,
+          "log_input_output": true,
+          "analysis_totals": true,
+          "queue_drained": true
+        },
+        "latency_ms": {
+          "p50": 178.7,
+          "p95": 279.01,
+          "p99": 330.77
+        },
+        "report_statuses": {
+          "503": 12
+        }
+      },
+      "worker_stopped": {
+        "ai_statuses": {
+          "200": 500
+        },
+        "accounting_checks": {
+          "all_requests_succeeded": true,
+          "user_request_count": true,
+          "ledger_request_count": true,
+          "consume_log_count": true,
+          "same_amount_user_token_channel_ledger_log": true,
+          "wallet_untouched": true,
+          "no_open_reservations": true,
+          "log_input_output": true,
+          "analysis_totals": true,
+          "queue_drained": true
+        },
+        "latency_ms": {
+          "p50": 178.89,
+          "p95": 279.59,
+          "p99": 319.15
+        },
+        "report_statuses": {
+          "200": 35
+        }
+      },
+      "worker_restarted": true
+    },
+    "live_deep_pages": [
+      {
+        "after_record": 50,
+        "status": 200,
+        "details": 50,
+        "seconds": 0.0109
+      },
+      {
+        "after_record": 100000,
+        "status": 200,
+        "details": 50,
+        "seconds": 0.0107
+      },
+      {
+        "after_record": 180000,
+        "status": 200,
+        "details": 50,
+        "seconds": 0.01
+      }
+    ],
+    "all_go_tests_uncached": true,
+    "frontend_tests_passed": 8,
+    "frontend_typecheck_passed": true,
+    "linux_amd64_gateway_build": true
+  }
+}

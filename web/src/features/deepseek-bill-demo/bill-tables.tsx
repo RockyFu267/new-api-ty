@@ -92,6 +92,7 @@ export function BillUsers(props: {
 export function BillDetails(props: {
   report: Report
   page: number
+  loading?: boolean
   onPage: (page: number) => void
 }) {
   const { t } = useTranslation()
@@ -104,7 +105,7 @@ export function BillDetails(props: {
         <div className='flex items-center gap-3'>
           <Button
             variant='outline'
-            disabled={props.page <= 1}
+            disabled={props.page <= 1 || props.loading}
             onClick={() => props.onPage(props.page - 1)}
           >
             {t('Previous')}
@@ -115,7 +116,7 @@ export function BillDetails(props: {
           </span>
           <Button
             variant='outline'
-            disabled={props.page * 50 >= props.report.detail_total}
+            disabled={!props.report.next_cursor || props.loading}
             onClick={() => props.onPage(props.page + 1)}
           >
             {t('Next')}
@@ -147,7 +148,7 @@ export function BillDetails(props: {
               if (row.estimated) quality = t('Estimated')
               if (row.unpriced) quality = t('Unpriced')
               return (
-                <TableRow key={row.id}>
+                <TableRow key={row.report_key ?? `${row.id}/${row.request_id}`}>
                   <TableCell className='whitespace-nowrap'>
                     <div>
                       {new Intl.DateTimeFormat('zh-CN', {

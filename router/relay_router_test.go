@@ -25,6 +25,11 @@ func TestListModelsSupportsOpenAIAndGeminiAuthentication(t *testing.T) {
 		Quota:    100,
 	}
 	require.NoError(t, model.DB.Create(&user).Error)
+	department, err := model.SaveDepartment(0, "Model list test")
+	require.NoError(t, err)
+	require.NoError(t, model.AssignUserDepartment(user.Id, department.Id))
+	_, err = model.SaveDepartmentModels(department.Id, []string{"test-model"})
+	require.NoError(t, err)
 	require.NoError(t, model.DB.Create(&model.Token{
 		UserId:         user.Id,
 		Key:            "modelstestkey",
@@ -107,7 +112,7 @@ func setupRelayRouterTestDB(t *testing.T) {
 	require.NoError(t, os.Setenv("SQL_DSN", "local"))
 	require.NoError(t, model.InitDB())
 	model.LOG_DB = model.DB
-	require.NoError(t, model.DB.AutoMigrate(&model.User{}, &model.Token{}, &model.Ability{}))
+	require.NoError(t, model.DB.AutoMigrate(&model.User{}, &model.Token{}, &model.Ability{}, &model.Department{}, &model.UserDepartment{}, &model.DepartmentModelPolicy{}))
 
 	t.Cleanup(func() {
 		if sqlDB, err := model.DB.DB(); err == nil {

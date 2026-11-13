@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
@@ -61,6 +62,15 @@ func TestDeepSeekDemoOnlyShowsUsedModelUsersAndIncludesMidnightRequests(t *testi
 	LOG_DB = db
 	t.Cleanup(func() { LOG_DB = previous; require.NoError(t, pool.Close()) })
 	require.NoError(t, db.AutoMigrate(&Log{}))
+	reportStore, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	reportPool, err := reportStore.DB()
+	require.NoError(t, err)
+	reportPool.SetMaxOpenConns(1)
+	oldReport := DeepSeekReportDB
+	DeepSeekReportDB = reportStore
+	t.Cleanup(func() { DeepSeekReportDB = oldReport; require.NoError(t, reportPool.Close()) })
+	require.NoError(t, InitDeepSeekReportStore(reportStore))
 	a := demoConsume(t, "2026-11-08 10:00:00", 1)
 	b := demoConsume(t, "2026-11-08 23:59:59", 2)
 	b.CreatedAt += 60
@@ -68,6 +78,7 @@ func TestDeepSeekDemoOnlyShowsUsedModelUsersAndIncludesMidnightRequests(t *testi
 	excluded.ModelName = "qwen"
 	nextDay := demoConsume(t, "2026-11-09 00:00:00", 4)
 	require.NoError(t, db.Create(&[]Log{a, b, excluded, nextDay}).Error)
+	require.NoError(t, ProcessDeepSeekReportBatch(context.Background(), db, reportStore, 200, time.Now()))
 	report, err := GetDeepSeekDemoReport("2026-11-08", "2026-11-08", 2, 1)
 	require.NoError(t, err)
 	require.Len(t, report.Users, 2)
@@ -96,7 +107,17 @@ func TestDeepSeekSelfDemoReportScopesTotalsUsersAndDetails(t *testing.T) {
 	LOG_DB = db
 	t.Cleanup(func() { LOG_DB = previous; require.NoError(t, pool.Close()) })
 	require.NoError(t, db.AutoMigrate(&Log{}))
+	reportStore, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+	reportPool, err := reportStore.DB()
+	require.NoError(t, err)
+	reportPool.SetMaxOpenConns(1)
+	oldReport := DeepSeekReportDB
+	DeepSeekReportDB = reportStore
+	t.Cleanup(func() { DeepSeekReportDB = oldReport; require.NoError(t, reportPool.Close()) })
+	require.NoError(t, InitDeepSeekReportStore(reportStore))
 	require.NoError(t, db.Create(&[]Log{demoConsume(t, "2026-11-08 10:00:00", 1), demoConsume(t, "2026-11-08 10:00:00", 2)}).Error)
+	require.NoError(t, ProcessDeepSeekReportBatch(context.Background(), db, reportStore, 200, time.Now()))
 	report, err := GetDeepSeekSelfDemoReport("2026-11-08", "2026-11-08", 1, 1)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, report.Totals.Requests)

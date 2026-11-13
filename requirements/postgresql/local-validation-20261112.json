@@ -1,0 +1,548 @@
+{
+  "date": "2026-11-12",
+  "scope": "local PostgreSQL migration and concurrency rehearsal; production gateway untouched",
+  "postgres": "17.11",
+  "database_limits": {
+    "cpus": 4,
+    "memory_gib": 4,
+    "application_max_connections": 32,
+    "application_idle_connections": 16,
+    "connection_lifetime_seconds": 300
+  },
+  "source": {
+    "tables": 49,
+    "rows": 365205,
+    "sha256": "46e790496e9d4abc59b3656f695f270ef2180fbcc2792ca02b1d72502b5fcc8e",
+    "unchanged": true
+  },
+  "synthetic_history": {
+    "added_ledger_rows": 2192000,
+    "heavy_users": 4,
+    "minimum_ledger_rows_each_heavy_user": 500000,
+    "total_test_users": 100,
+    "test_api_keys": 200
+  },
+  "load_tests": {
+    "baseline": {
+      "name": "baseline",
+      "requests": 600,
+      "concurrency": 64,
+      "users": 4,
+      "seconds": 3.81,
+      "rps": 157.48,
+      "http_statuses": {
+        "200": 600
+      },
+      "latency_ms": {
+        "p50": 375.9,
+        "p95": 635.68,
+        "p99": 716.12
+      },
+      "deltas": {
+        "users": [
+          565800,
+          600,
+          0
+        ],
+        "tokens": [
+          565800,
+          -565800
+        ],
+        "channel": [
+          565800
+        ],
+        "ledger": [
+          600,
+          565800
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          600,
+          565800,
+          60000000,
+          600000
+        ],
+        "analysis": [
+          600,
+          60000000,
+          600000,
+          58800000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    },
+    "multi-user-baseline": {
+      "name": "multi-user-baseline",
+      "requests": 6000,
+      "concurrency": 256,
+      "users": 100,
+      "seconds": 33.504,
+      "rps": 179.08,
+      "http_statuses": {
+        "200": 6000
+      },
+      "latency_ms": {
+        "p50": 859.03,
+        "p95": 4799.56,
+        "p99": 7104.99
+      },
+      "deltas": {
+        "users": [
+          5658000,
+          6000,
+          0
+        ],
+        "tokens": [
+          5658000,
+          -5658000
+        ],
+        "channel": [
+          5658000
+        ],
+        "ledger": [
+          6000,
+          5658000
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          6000,
+          5658000,
+          600000000,
+          6000000
+        ],
+        "analysis": [
+          6000,
+          600000000,
+          6000000,
+          588000000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    },
+    "large-history-before": {
+      "name": "large-history-before",
+      "requests": 1200,
+      "concurrency": 64,
+      "users": 4,
+      "seconds": 69.009,
+      "rps": 17.39,
+      "http_statuses": {
+        "200": 1200
+      },
+      "latency_ms": {
+        "p50": 3527.69,
+        "p95": 5878.83,
+        "p99": 6797.09
+      },
+      "deltas": {
+        "users": [
+          1131600,
+          1200,
+          0
+        ],
+        "tokens": [
+          1131600,
+          -1131600
+        ],
+        "channel": [
+          1131600
+        ],
+        "ledger": [
+          1200,
+          1131600
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          1200,
+          1131600,
+          120000000,
+          1200000
+        ],
+        "analysis": [
+          1200,
+          120000000,
+          1200000,
+          117600000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    },
+    "large-history-after-ready": {
+      "name": "large-history-after-ready",
+      "requests": 1200,
+      "concurrency": 64,
+      "users": 4,
+      "seconds": 6.273,
+      "rps": 191.3,
+      "http_statuses": {
+        "200": 1200
+      },
+      "latency_ms": {
+        "p50": 325.94,
+        "p95": 533.11,
+        "p99": 609.75
+      },
+      "deltas": {
+        "users": [
+          1131600,
+          1200,
+          0
+        ],
+        "tokens": [
+          1131600,
+          -1131600
+        ],
+        "channel": [
+          1131600
+        ],
+        "ledger": [
+          1200,
+          1131600
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          1200,
+          1131600,
+          120000000,
+          1200000
+        ],
+        "analysis": [
+          1200,
+          120000000,
+          1200000,
+          117600000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    },
+    "final-multi-user": {
+      "name": "final-multi-user",
+      "requests": 10000,
+      "concurrency": 256,
+      "users": 100,
+      "seconds": 71.407,
+      "rps": 140.04,
+      "http_statuses": {
+        "200": 10000
+      },
+      "latency_ms": {
+        "p50": 1109.35,
+        "p95": 5876.68,
+        "p99": 8964.55
+      },
+      "deltas": {
+        "users": [
+          9430000,
+          10000,
+          0
+        ],
+        "tokens": [
+          9430000,
+          -9430000
+        ],
+        "channel": [
+          9430000
+        ],
+        "ledger": [
+          10000,
+          9430000
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          10000,
+          9430000,
+          1000000000,
+          10000000
+        ],
+        "analysis": [
+          10000,
+          1000000000,
+          10000000,
+          980000000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    },
+    "long-context-stream": {
+      "name": "long-context-stream",
+      "requests": 256,
+      "concurrency": 64,
+      "users": 100,
+      "body_kib": 512,
+      "slow_upstream": true,
+      "stream_all": true,
+      "seconds": 5.057,
+      "rps": 50.62,
+      "http_statuses": {
+        "200": 256
+      },
+      "latency_ms": {
+        "p50": 1131.11,
+        "p95": 1462.08,
+        "p99": 1508.42
+      },
+      "deltas": {
+        "users": [
+          241408,
+          256,
+          0
+        ],
+        "tokens": [
+          241408,
+          -241408
+        ],
+        "channel": [
+          241408
+        ],
+        "ledger": [
+          256,
+          241408
+        ],
+        "reserved": [
+          0,
+          0
+        ],
+        "logs": [
+          256,
+          241408,
+          25600000,
+          256000
+        ],
+        "analysis": [
+          256,
+          25600000,
+          256000,
+          25088000
+        ],
+        "pending": [
+          0
+        ]
+      },
+      "accounting_checks": {
+        "all_requests_succeeded": true,
+        "user_request_count": true,
+        "ledger_request_count": true,
+        "consume_log_count": true,
+        "same_amount_user_token_channel_ledger_log": true,
+        "wallet_untouched": true,
+        "no_open_reservations": true,
+        "log_input_output": true,
+        "analysis_totals": true,
+        "queue_drained": true
+      }
+    }
+  },
+  "faults_and_accounting": {
+    "monthly_exhaustion_blocks_before_upstream": true,
+    "wallet_fallback_charges_wallet_and_token_once": true,
+    "upstream_failure_refunds_token_and_department": true,
+    "persistent_tokens_lock": {
+      "http_status": 503,
+      "seconds": 6.36,
+      "no_upstream_call": true,
+      "no_partial_debit": true,
+      "recovers_with_one_debit": true
+    },
+    "persistent_users_lock": {
+      "http_status": 503,
+      "seconds": 6.37,
+      "no_upstream_call": true,
+      "no_partial_debit": true,
+      "recovers_with_one_debit": true
+    },
+    "unassigned_department_cannot_bypass_with_wallet": true,
+    "missing_model_policy_is_default_deny": true,
+    "independent_decimal_pricing_checked_records": 10073,
+    "all_derived_counters_match_ledger": 312
+  },
+  "historical_verification": {
+    "user_id": 194,
+    "source_snapshot_unchanged": true,
+    "historical_bill_matches_independent_sqlite_calculation": true,
+    "historical_bill": {
+      "requests": 176892,
+      "input": 23611233492,
+      "output": 114080777,
+      "cache_read": 23151651712,
+      "peak_units": 60949342488,
+      "off_peak_units": 107419120980,
+      "actual": 85884,
+      "actual_quota": 60091428
+    },
+    "historical_quota_matches_sqlite": true,
+    "wallet_unchanged": true,
+    "usage_analysis_api_matches_pg": true,
+    "only_loopback_mock_channel_enabled": true,
+    "fx_unchanged": 7.3
+  },
+  "all_go_tests_passed": true,
+  "linux_amd64_build_passed": true,
+  "limitations": [
+    "Local 20ms mock upstream; slow-stream scenario uses 1s provider latency. No real provider used for load.",
+    "Gateway and load generator run on the Windows host; PG resources alone are limited to 4 CPUs/4GiB.",
+    "Reported upstream token counts are controlled synthetic values; long-context test transmits actual 512KiB prompts.",
+    "Results validate tested concurrency; they are not a production capacity SLA or a guarantee against hardware/network failures.",
+    "Ordinary consume logs and secondary stats keep their existing separate-write semantics; no distributed exactly-once transaction was added."
+  ],
+  "final_startup_check": {
+    "name": "final-startup-check",
+    "requests": 100,
+    "concurrency": 16,
+    "users": 100,
+    "body_kib": 0,
+    "slow_upstream": false,
+    "stream_all": false,
+    "seconds": 0.571,
+    "rps": 175.2,
+    "http_statuses": {
+      "200": 100
+    },
+    "latency_ms": {
+      "p50": 78.6,
+      "p95": 117.08,
+      "p99": 129.14
+    },
+    "deltas": {
+      "users": [
+        94300,
+        100,
+        0
+      ],
+      "tokens": [
+        94300,
+        -94300
+      ],
+      "channel": [
+        94300
+      ],
+      "ledger": [
+        100,
+        94300
+      ],
+      "reserved": [
+        0,
+        0
+      ],
+      "logs": [
+        100,
+        94300,
+        10000000,
+        100000
+      ],
+      "analysis": [
+        100,
+        10000000,
+        100000,
+        9800000
+      ],
+      "pending": [
+        0
+      ]
+    },
+    "accounting_checks": {
+      "all_requests_succeeded": true,
+      "user_request_count": true,
+      "ledger_request_count": true,
+      "consume_log_count": true,
+      "same_amount_user_token_channel_ledger_log": true,
+      "wallet_untouched": true,
+      "no_open_reservations": true,
+      "log_input_output": true,
+      "analysis_totals": true,
+      "queue_drained": true
+    }
+  },
+  "production_untouched": {
+    "gateway_pid": "94510",
+    "SQL_DSN_unset": true,
+    "env_sha256": "9a39eae7614c14775b392f7e45bcf0b353eace2b5feb68b7d9e24657678a07f5",
+    "binary_sha256": "b51659260579cc5b7f2467df88ff0a3895fa74c8913922541dca5b3330786daf",
+    "gateway_healthy": true,
+    "read_only_verification": true
+  }
+}
